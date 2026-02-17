@@ -18,7 +18,7 @@ import UpdatesPage from "./pages/landing/UpdatesPage";
 import AboutPage from "./pages/landing/AboutPage";
 import TeamPage from "./pages/landing/TeamPage";
 import SupportPage from "./pages/landing/SupportPage";
-import SecurityPage from "./pages/landing/SecurityPage";
+// import SecurityPage from "./pages/landing/SecurityPage";
 import TermsPage from "./pages/landing/TermsPage";
 import PrivacyPage from "./pages/landing/PrivacyPage";
 import DocumentationPage from "./pages/landing/DocumentationPage";
@@ -67,7 +67,7 @@ const App = () => (
             <Route path="/about" element={<AboutPage />} />
             <Route path="/team" element={<TeamPage />} />
             <Route path="/support" element={<SupportPage />} />
-            <Route path="/security" element={<SecurityPage />} />
+            {/* <Route path="/security" element={<SecurityPage />} /> */}
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/documentation" element={<DocumentationPage />} />

@@ -34,7 +34,7 @@ export const navigationSections = [
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
-      { label: "Security", href: "/security" },
+      // { label: "Security", href: "/security" },
     ],
   },
 ];

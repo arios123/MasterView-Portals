@@ -79,9 +79,9 @@ export function Footer() {
               <a href="/terms" className="text-sm text-[#8b8b8b] hover:text-[#0B294b] transition-colors">
                 Terms
               </a>
-              <a href="/security" className="text-sm text-[#8b8b8b] hover:text-[#0B294b] transition-colors">
+              {/* <a href="/security" className="text-sm text-[#8b8b8b] hover:text-[#0B294b] transition-colors">
                 Security
-              </a>
+              </a> */}
             </div>
           </div>
         </div>
