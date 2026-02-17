@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LifeBuoy, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Sun, Moon, LogOut, LifeBuoy, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,12 +14,16 @@ import { Project, EventItem } from "@/types";
 import { USERS, ROLE_TABS, CLIENTS } from "@/constants";
 import { useAppointmentTypes } from "@/hooks/useAppointmentTypes";
 import { useProjectStatuses } from "@/hooks/useProjectStatuses";
-import { usePrice } from "@/contexts/PriceContext";
+import { PriceContext } from "@/contexts/PriceContext";
 import { ProjectCard } from "@/components/portal/ProjectCard";
 import { CompletedProjectCard } from "@/components/portal/CompletedProjectCard";
 import { ClientProfile } from "@/components/portal/ClientProfile";
 import { CalendarTab } from "@/components/portal/CalendarTab";
 import { AdminTab } from "@/components/portal/AdminTab";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { MobileSidebar } from "@/components/MobileSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { NewClientDialog } from "@/components/portal/NewClientDialog";
 import { NoWorkspaceLimbo } from "@/components/portal/NoWorkspaceLimbo";
 import { useAdminStore, Role } from "@/stores/adminStore";
@@ -28,25 +33,19 @@ import { TermsCheckGate } from "@/components/shared/TermsCheckGate";
 import { 
   fetchClientsWithActiveProjects, 
   fetchClientsNotAssignedToUser,
-  fetchClientsAssignedToUserOrCrew,
   fetchClientById
 } from "@/queries/clients";
 import { fetchClientAssignments } from "@/queries/clientAssignments";
-import { fetchProjectCrewAssignments } from "@/queries/projectCrewAssignments";
 import { 
   fetchUserProjects, 
   mapProjectWithTotals, 
   loadProjectById, 
   updateProjectStatus as updateProjectStatusQuery,
-  updateProjectQuickNote,
-  touchProjectLastUsed
+  updateProjectQuickNote
 } from "@/queries/projects";
 import { fetchUserById, fetchUsersByIds } from "@/queries/users";
 import { getUserPermissions } from "@/queries/permissions";
 import { useWorkspaceTheme } from "@/hooks/useWorkspaceTheme";
-import { canChangeToStatus } from "@/utils/statusPermissions";
-import { useOnboarding } from "@/contexts/OnboardingContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Renovation Portal — Stable Build (refactored)
@@ -56,19 +55,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
  */
 
 export default function PortalStable() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { currentWorkspace, currentUserRole, loading: workspaceLoading, workspaces } = useWorkspace();
   const workspaceId = currentWorkspace?.id;
   const { appointmentTypes } = useAppointmentTypes(workspaceId);
   const { projectStatuses } = useProjectStatuses(workspaceId);
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   
   // Apply workspace theme (only in portal)
   useWorkspaceTheme();
-  
-  // Get onboarding state from context
-  const { state: onboardingState } = useOnboarding();
   
   // Get status names for logic checks
   const completedStatusName = projectStatuses.find(s => s.name === "Completed")?.name || "Completed";
@@ -77,7 +72,10 @@ export default function PortalStable() {
   const navigate = useNavigate();
   const params = useParams();
   const [userRole, setUserRole] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+  const [dark, setDark] = useState(false);
   const { can, permissions } = usePermissions();
+  const isMobile = useIsMobile();
   
   // Determine active tab from route
   const getTabFromPath = (pathname: string): string => {
@@ -124,7 +122,7 @@ export default function PortalStable() {
   const [completedSearch, setCompletedSearch] = useState("");
   const [lostSearch, setLostSearch] = useState("");
   const [profile, setProfile] = useState<Project | null>(null);
-  const { hidden: hidePrices, setHidden: setHidePrices } = usePrice();
+  const [hidePrices, setHidePrices] = useState(false);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [supportMessage, setSupportMessage] = useState('');
   const [supportSubject, setSupportSubject] = useState('');
@@ -145,12 +143,35 @@ export default function PortalStable() {
   useEffect(() => {
     if (user && workspaceId) {
       getUserPermissions(user.id, workspaceId).then((permissions) => {
-        // Permissions loaded
+        console.log('=== getUserPermissions Result ===');
+        console.log('User ID:', user.id);
+        console.log('Workspace ID:', workspaceId);
+        console.log('Permissions:', permissions);
+        console.log('Permissions Count:', permissions.length);
+        console.log('===============================');
       }).catch((error) => {
         console.error('Error fetching user permissions:', error);
       });
     }
   }, [user, workspaceId]);
+
+  // Fetch user's name from database and get role from workspace context
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchUserData = async () => {
+      try {
+        const data = await fetchUserById(user.id);
+        if (data) {
+          setUserName(data.name || "");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
 
   // Get role from workspace context
   useEffect(() => {
@@ -204,31 +225,13 @@ export default function PortalStable() {
     }
   };
 
-  // Fetch clients where user is assigned staff OR projects where user is crew
+  // Fetch clients not assigned to current user
   const fetchClientProjects = async () => {
     if (!user || !workspaceId) return;
 
     setClientProjectsLoading(true);
     try {
-      // 1. Find all clients that ARE tied to this user (assigned staff or crew)
-      const assignedOrCrewClients = await fetchClientsAssignedToUserOrCrew(user.id, workspaceId);
-      const assignedClientIds = new Set(
-        (assignedOrCrewClients || []).map((client: any) => client.client_id)
-      );
-
-      // 2. Fetch ALL clients in the workspace
-      const { data: allClients, error: clientsError } = await (supabase as any)
-        .from("clients")
-        .select("*")
-        .eq("workspace_id", workspaceId)
-        .order("name");
-
-      if (clientsError) throw clientsError;
-
-      // 3. Keep only clients that are NOT assigned to this user and where user is NOT crew
-      const clientsData = (allClients || []).filter(
-        (client: any) => !assignedClientIds.has(client.client_id)
-      );
+      const clientsData = await fetchClientsNotAssignedToUser(user.id, workspaceId);
       
       // First, get all active projects for these clients
       const projectsWithUsers = await Promise.all(
@@ -271,33 +274,21 @@ export default function PortalStable() {
           let projectData = null;
           let projectStatus = "No Project";
 
-          // Fetch crew for the active project (project-level crew assignments)
-          let crew = "No crew assigned";
-          let crewMembers: Array<{ name: string | null; email: string | null }> = [];
-          
+          // Fetch assigned staff for this client
+          const assignments = await fetchClientAssignments(client.client_id, workspaceId);
+          const assignedStaff = assignments
+            .map((a: any) => a.user)
+            .filter(Boolean)
+            .map((user: any) => ({
+              name: user.name,
+              email: user.email,
+            }));
+
           if (client.active_project) {
             const found = projectsWithUsers.find(p => p.client.client_id === client.client_id);
             if (found && found.projectData && !found.error) {
               projectData = found.projectData;
               projectStatus = projectData.status || "Unknown";
-              
-              // Fetch crew for this project
-              try {
-                const crewAssignments = await fetchProjectCrewAssignments(projectData.project_id, workspaceId);
-                crewMembers = crewAssignments
-                  .map((a: any) => a.user)
-                  .filter(Boolean)
-                  .map((user: any) => ({
-                    name: user.name,
-                    email: user.email,
-                  }));
-                
-                if (crewMembers.length > 0) {
-                  crew = crewMembers.map(m => m.name || m.email || "Unknown").join(", ");
-                }
-              } catch (error) {
-                console.error("Error fetching crew for project:", error);
-              }
             }
           }
 
@@ -307,7 +298,9 @@ export default function PortalStable() {
             clientName: client.name,
             project: projectData?.name || projectData?.project_type || "No Active Project",
             residence: projectData?.address || client.email || "No address",
-            crew: crew,
+            crew: assignedStaff.length > 0 
+              ? assignedStaff.map(s => s.name || s.email || "Unknown").join(", ")
+              : "No assigned staff",
             note: projectData?.notes || "No notes",
             phaseIndex: 0,
             paid: 0,
@@ -317,6 +310,7 @@ export default function PortalStable() {
             status: projectStatus === "No Project" ? "Estimate" : (projectStatus as string),
             assignedUserId: projectData?.created_by || undefined,
             quickNote: "",
+            assignedStaff, // Store full assigned staff array for display
           };
         }),
       );
@@ -384,6 +378,7 @@ export default function PortalStable() {
           table: "projects",
         },
         (payload) => {
+          console.log("Real-time project update:", payload);
           // Refetch projects when there's a change (only via real-time updates)
           fetchClientsWithActiveProjectsHandler();
           fetchProjects();
@@ -398,6 +393,7 @@ export default function PortalStable() {
           table: "clients",
         },
         (payload) => {
+          console.log("Real-time client update:", payload);
           fetchClientsWithActiveProjectsHandler();
         },
       )
@@ -413,41 +409,15 @@ export default function PortalStable() {
   const onChangeStatus = async (id: string, status: string) => {
     if (!workspaceId) return;
     
-    // Check if user has edit permission for the relevant tab
-    // Status changes can happen from Projects, Completed, or Lost tabs
-    const hasProjectsEdit = can("tab.projects.view") && can("tab.projects.edit");
-    const hasCompletedEdit = can("tab.completed.view") && can("tab.completed.edit");
-    const hasLostEdit = can("tab.lost.view") && can("tab.lost.edit");
-    
-    if (!hasProjectsEdit && !hasCompletedEdit && !hasLostEdit) {
-      toast({
-        title: "Permission Denied",
-        description: "You don't have permission to edit project status",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Find current project to get current status
-    const currentProject = projects.find(p => p.id === id);
-    const currentStatus = currentProject?.status || null;
-    
-    // Check if user has permission to change to this status
-    if (!canChangeToStatus(status, currentStatus, can)) {
-      toast({
-        title: "Permission Denied",
-        description: `You don't have permission to change status to "${status}"`,
-        variant: "destructive",
-      });
-      return;
-    }
+    console.log("Updating project status:", { id, status });
 
     try {
-      await updateProjectStatusQuery(id, status, workspaceId, user?.id);
+      await updateProjectStatusQuery(id, status, workspaceId);
       
       // Update local state
       setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
 
+      console.log("Status updated successfully");
       toast({
         title: "Status Updated",
         description: `Project status changed to ${status}`,
@@ -464,14 +434,14 @@ export default function PortalStable() {
 
   const onQuickNoteSave = async (id: string, note: string) => {
     if (!workspaceId || !user) return;
-    
+
     try {
       await updateProjectQuickNote(id, note, workspaceId, user.id);
-      
+
       // Update projects state
       setProjects((prev) => prev.map((x) => (x.id === id ? { ...x, quickNote: note } : x)));
       // Also update clientsWithProjects if the project is in there
-      setClientsWithProjects((prev) => 
+      setClientsWithProjects((prev) =>
         prev.map((client) => {
           if (client.activeProject && client.activeProject.id === id) {
             return {
@@ -492,7 +462,6 @@ export default function PortalStable() {
         description: "Failed to save quick note",
         variant: "destructive",
       });
-      throw error;
     }
   };
 
@@ -506,6 +475,7 @@ export default function PortalStable() {
 
   const onLogActivity = (clientId: string, line: string) => {
     // Log activity for client - could be extended to store in projects or separate activity log
+    console.log(`Activity for ${clientId}: ${line}`);
   };
 
   // Build typeColors from database appointment types
@@ -606,9 +576,6 @@ export default function PortalStable() {
           loadProjectByIdHandler(projectId, clientId).then((project) => {
             if (project) {
               setProfile(project);
-              if (user?.id && workspaceId) {
-                touchProjectLastUsed(user.id, projectId, workspaceId);
-              }
               // If clientId in route doesn't match project's clientId, update the route
               if (clientId && project.clientId && clientId !== project.clientId) {
                 const tab = params.tab || 'Activity';
@@ -630,7 +597,7 @@ export default function PortalStable() {
   }, [params.projectId, params.clientId, params.tab, clientsWithProjects, profile, user?.id, workspaceId]); // Depend on route params
 
   // Sync activeTab with route when route changes (browser back/forward)
-  // Only refetch data when navigating via browser back/forward, not during onboarding
+  // Also refetch data when navigating to a different MAIN tab via browser navigation
   useEffect(() => {
     if (!isUserActionRef.current) {
       const tabFromPath = getTabFromPath(location.pathname);
@@ -640,8 +607,7 @@ export default function PortalStable() {
         setActiveTab(tabFromPath);
         
         // Refetch data when navigating to a different MAIN tab via browser back/forward
-        // but only if not during onboarding
-        if (!onboardingState.active && previousTab !== tabFromPath && user && workspaceId && !workspaceLoading) {
+        if (previousTab !== tabFromPath && user && workspaceId && !workspaceLoading) {
           fetchClientsWithActiveProjectsHandler();
           fetchProjects();
           fetchClientProjects();
@@ -652,15 +618,15 @@ export default function PortalStable() {
     }
     isUserActionRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, activeTab, user, workspaceId, workspaceLoading, onboardingState.active]);
+  }, [location.pathname, activeTab, user, workspaceId, workspaceLoading]);
 
   const handleTabChange = (tab: string) => {
     isUserActionRef.current = true;
     const previousTab = previousMainTabRef.current;
     
-    // Only refetch data when switching to a different MAIN tab and not during onboarding
+    // Only refetch data when switching to a different MAIN tab
     // This ensures data is fresh when navigating between main sections
-    if (!onboardingState.active && previousTab !== tab && user && workspaceId && !workspaceLoading) {
+    if (previousTab !== tab && user && workspaceId && !workspaceLoading) {
       fetchClientsWithActiveProjectsHandler();
       fetchProjects();
       fetchClientProjects();
@@ -694,13 +660,12 @@ export default function PortalStable() {
     if (!project) return;
     setProfile(project);
     // If project.id === project.clientId, it means there's no real project (client without projects)
+    // In this case, navigate to Client Projects tab directly
     const isClientWithoutProject = project.id === project.clientId;
     if (isClientWithoutProject) {
       navigate(`/projects/${project.clientId}/${project.id}/Client Projects`);
     } else {
-      if (user?.id && workspaceId) {
-        touchProjectLastUsed(user.id, project.id, workspaceId);
-      }
+      // Navigate to /projects/:clientId/:projectId
       navigate(`/projects/${project.clientId}/${project.id}`);
     }
   };
@@ -723,8 +688,6 @@ export default function PortalStable() {
     fetchClientsWithActiveProjectsHandler();
   };
 
-  // Onboarding is now managed by OnboardingContext - no logic needed here
-
   // Show limbo page if user has no workspaces (and not loading)
   if (!workspaceLoading && workspaces.length === 0) {
     return <NoWorkspaceLimbo />;
@@ -732,6 +695,44 @@ export default function PortalStable() {
 
   return (
     <TermsCheckGate>
+      <PriceContext.Provider value={{ hidden: hidePrices, setHidden: setHidePrices }}>
+        <SidebarProvider>
+          <div className={(dark ? "dark " : "") + "bg-background text-foreground min-h-screen flex w-full"}>
+          {/* Desktop Sidebar - hidden on mobile */}
+          {!isMobile && <AppSidebar activeTab={activeTab} onTabChange={handleTabChange} availableTabs={tabs} />}
+
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="sticky top-0 z-20 backdrop-blur bg-background/90">
+              <div className="px-6 py-3 flex items-center gap-3">
+                {/* Mobile Sidebar Hamburger - only on mobile */}
+                {isMobile && (
+                  <MobileSidebar activeTab={activeTab} onTabChange={handleTabChange} availableTabs={tabs} onSignOut={signOut} />
+                )}
+                {user && <div className="text-sm text-muted-foreground ml-4">Welcome, {userName || user.email}</div>}
+                <div className="ml-auto flex items-center gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => setDark((d) => !d)} title="Theme">
+                    {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  </Button>
+                  <Switch 
+                    checked={hidePrices} 
+                    onCheckedChange={setHidePrices}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={signOut}
+                    title="Sign Out"
+                    className="text-muted-foreground hover:text-destructive hidden md:flex"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto">
               {!profile && (
                 <div className="max-w-7xl mx-auto px-6 py-8 w-full">
                   {/* PROJECTS */}
@@ -1044,9 +1045,7 @@ export default function PortalStable() {
                                 key={client.clientId}
                                 project={client.activeProject!}
                                 onStatusChange={onChangeStatus}
-                                onProfileClick={can("tab.projects.view") ? handleOpenProfile : undefined}
                                 userRole={userRole}
-                                canEdit={can("tab.completed.view") && can("tab.completed.edit")}
                               />
                             ))}
                         </div>
@@ -1092,9 +1091,7 @@ export default function PortalStable() {
                                 key={client.clientId}
                                 project={client.activeProject!}
                                 onStatusChange={onChangeStatus}
-                                onProfileClick={can("tab.projects.view") ? handleOpenProfile : undefined}
                                 userRole={userRole}
-                                canEdit={can("tab.lost.view") && can("tab.lost.edit")}
                               />
                             ))}
                         </div>
@@ -1158,25 +1155,24 @@ export default function PortalStable() {
                   )}
 
                   {/* ADMIN */}
-                  {activeTab === "Admin" && (
-                    <div>
-                      <AdminTab />
-                    </div>
-                  )}
+                  {activeTab === "Admin" && <AdminTab />}
                 </div>
               )}
 
-        {profile && (
-          <div data-onboarding-highlight="project-profile">
-            <ClientProfile
-              project={profile}
-              onClose={handleCloseProfile}
-              hidePrices={hidePrices}
-              setHidePrices={setHidePrices}
-              userRole={userRole}
-            />
+              {profile && (
+                <ClientProfile
+                  project={profile}
+                  onClose={handleCloseProfile}
+                  hidePrices={hidePrices}
+                  setHidePrices={setHidePrices}
+                  userRole={userRole}
+                />
+              )}
+            </div>
           </div>
-        )}
+        </div>
+      </SidebarProvider>
+    </PriceContext.Provider>
     </TermsCheckGate>
   );
 }

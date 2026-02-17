@@ -98,6 +98,12 @@ export function StaffManagement() {
       return;
     }
 
+    // COMMENTED OUT IN DEMO MODE - demo is read-only
+    const { blockDemoWrite } = await import('@/utils/demoMode');
+    if (blockDemoWrite('send user invite')) {
+      return;
+    }
+
     const form = new FormData(e.currentTarget);
     setLoading(true);
     
@@ -105,6 +111,7 @@ export function StaffManagement() {
     const userRole = (form.get('role') as Role) || '';
     
     try {
+      // COMMENTED OUT IN DEMO MODE - demo is read-only
       await inviteUser(email, userRole, workspaceId);
       toast.success(`Invite sent to ${email}`);
       setOpen(false);
@@ -122,8 +129,15 @@ export function StaffManagement() {
       toast.error('You do not have permission to update roles');
       return;
     }
+
+    // COMMENTED OUT IN DEMO MODE - demo is read-only
+    const { blockDemoWrite } = await import('@/utils/demoMode');
+    if (blockDemoWrite('update user role')) {
+      return;
+    }
     
     try {
+      // COMMENTED OUT IN DEMO MODE - demo is read-only
       await updateUserRoleQuery(id, newRole, workspaceId);
       toast.success('Role updated');
       fetchStaff();
@@ -216,13 +230,7 @@ export function StaffManagement() {
           </SelectContent>
         </Select>
         <Can permission="tab.admin_staff.edit">
-          <Button 
-            onClick={() => setOpen(true)} 
-            className="gap-2"
-            data-onboarding-highlight="admin-invite-button"
-          >
-            <UserPlus className="w-4 h-4"/>Send Invite
-          </Button>
+          <Button onClick={() => setOpen(true)} className="gap-2"><UserPlus className="w-4 h-4"/>Send Invite</Button>
         </Can>
       </div>
 

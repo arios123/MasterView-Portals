@@ -5,11 +5,10 @@ import { Trash2 } from 'lucide-react';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useLookbookQuestions } from '@/hooks/lookbook/useLookbookQuestions';
 import { useLookbookItems } from '@/hooks/lookbook/useLookbookItems';
 import { useLookbookSelections } from '@/hooks/lookbook/useLookbookSelections';
 import { useLookbookFilter } from '@/hooks/lookbook/useLookbookFilter';
-import { useLookbookQuestionsManagement } from '@/hooks/lookbook/useLookbookQuestionsManagement';
-import { useLookbookAnswers } from '@/hooks/lookbook/useLookbookAnswers';
 import { exportLookbookItems } from '@/utils/lookbookExport';
 import { LookbookItem } from '@/types/lookbook';
 import { QuestionFormFields } from './lookbook/QuestionFormFields';
@@ -74,11 +73,6 @@ export default function LookBookTab({ projectId, project, activeDraftItems = [],
   const canEditSelectionTab = can('component.lookbook_selectiontab.edit');
   const canViewSummaryTab = can('component.lookbook_summarytab.view');
   const canEditSummaryTab = can('component.lookbook_summarytab.edit');
-  
-  // Granular permission checks for Questions tab buttons
-  // These require BOTH the tab edit permission AND the specific button permission
-  const canAddQuestions = canEditQuestionsTab && can('component.lookbook_questionstabquestions.add');
-  const canDeleteQuestions = canEditQuestionsTab && can('component.lookbook_questionstabquestions.delete');
 
   // Filter visible tabs based on view permissions (memoized to prevent hook issues)
   const visibleTabs = useMemo(() => [
@@ -96,18 +90,9 @@ export default function LookBookTab({ projectId, project, activeDraftItems = [],
   }, [hasViewPricePermission, permissions, setHidePrices]);
 
   // Custom hooks - must be called unconditionally before any early returns
-  // Get questions for this project
-  const questionsManagement = useLookbookQuestionsManagement({
+  const questions = useLookbookQuestions({
     projectId,
     workspaceId,
-  });
-
-  // Get answers for this project (used for Summary tab)
-  const questionIds = questionsManagement.questions.map((q) => q.id);
-  const answersHook = useLookbookAnswers({
-    projectId,
-    workspaceId,
-    questionIds,
     autoSaveDelay: 1000,
   });
 
@@ -125,22 +110,22 @@ export default function LookBookTab({ projectId, project, activeDraftItems = [],
   }, [visibleTabValues, activeTab, setActiveTab]);
 
   // Handlers
-  const handleAnswerChange = (questionId: string, value: string) => {
-    answersHook.setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  const handleAnswerChange = (fieldId: string, value: string) => {
+    questions.setAnswers((prev) => ({ ...prev, [fieldId]: value }));
   };
 
   const handleContinueToLookbook = async () => {
-    const success = await answersHook.saveAnswers();
+    const success = await questions.saveLookbook();
     if (success) {
       setActiveTab('lookbook');
     }
   };
 
   const handleClearAll = async () => {
-    const answersCleared = await answersHook.clearAnswers();
+    const questionsCleared = await questions.clearAnswers();
     const selectionsCleared = await selections.clearSelections();
 
-    if (answersCleared && selectionsCleared) {
+    if (questionsCleared && selectionsCleared) {
       filter.setSearchTerm('');
       filter.setSortBy('relevance');
       filter.setSubTab(filter.subCategories[0]);
@@ -201,13 +186,9 @@ export default function LookBookTab({ projectId, project, activeDraftItems = [],
         {canViewQuestionsTab && (
           <TabsContent value="questions">
             <QuestionFormFields
-              projectId={projectId}
-              workspaceId={workspaceId}
-              answers={answersHook.answers}
+              answers={questions.answers}
               onAnswerChange={handleAnswerChange}
               readOnly={questionsTabReadOnly}
-              canAdd={canAddQuestions}
-              canDelete={canDeleteQuestions}
             />
             {!questionsTabReadOnly && (
               <div className="mt-4 flex gap-2">
@@ -246,11 +227,9 @@ export default function LookBookTab({ projectId, project, activeDraftItems = [],
         {canViewSummaryTab && (
             <TabsContent value="summary">
               <LookbookSummary
-                questions={questionsManagement.questions}
-                answers={answersHook.answers}
+                answers={questions.answers}
                 likedItems={selections.likedItems}
                 readOnly={summaryTabReadOnly}
-                hidePrices={hidePrices}
                 onEditQuestions={() => setActiveTab('questions')}
                 onExport={handleExport}
                 onToggleLike={selections.toggleLike}
@@ -283,9 +262,6 @@ export default function LookBookTab({ projectId, project, activeDraftItems = [],
         open={!!viewingItem}
         onOpenChange={(open) => !open && setViewingItem(null)}
         hidePrices={hidePrices}
-        isLiked={viewingItem?.id ? selections.selectedItemIds.has(viewingItem.id) : false}
-        onToggleLike={selections.toggleLike}
-        readOnly={selectionTabReadOnly}
       />
     </div>
   );

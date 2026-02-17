@@ -18,7 +18,6 @@ import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { updateProjectQuickNote, updateProjectNotes, fetchProjectById, updateProjectStatus, deleteProject } from '@/queries/projects';
 import { useProjectCrewAssignments } from '@/hooks/activity/useProjectCrewAssignments';
 import { ProjectCrewSection } from './activity/ProjectCrewSection';
-import { supabase } from '@/integrations/supabase/client';
 import { useProjectStatuses } from '@/hooks/useProjectStatuses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -41,6 +40,7 @@ import { deleteClient } from '@/queries/clients';
 import { filterAllowedStatuses, isStatusDropdownDisabled as checkStatusDropdownDisabled, canChangeToStatus } from '@/utils/statusPermissions';
 import { toast } from 'sonner';
 import { useWorkspaceTaxRate } from '@/hooks/useWorkspaceTaxRate';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface ActivityTabProps {
   project: Project;
@@ -77,8 +77,7 @@ export function ActivityTab({
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
   const { projectStatuses } = useProjectStatuses(currentWorkspace?.id);
-  
-  // Custom hooks for data fetching
+
   const { clientData } = useClientData(project.clientId);
   const paymentSplits = usePaymentSplits(activeDraftVersionId);
   const {
@@ -93,7 +92,6 @@ export function ActivityTab({
     currentStaffMemberId,
   } = useClientAssignments(project.clientId);
 
-  // Project crew assignments
   const {
     crewMembers,
     workspaceMembers: availableCrewMembers,
@@ -104,13 +102,9 @@ export function ActivityTab({
     handleRemoveCrewMember,
   } = useProjectCrewAssignments(project.id);
 
-  // Project details state
-  const [projectDetails, setProjectDetails] = useState<{
-    project_type: string | null;
-  } | null>(null);
+  const [projectDetails, setProjectDetails] = useState<{ project_type: string | null } | null>(null);
   const [loadingProjectDetails, setLoadingProjectDetails] = useState(false);
 
-  // Fetch project details
   useEffect(() => {
     const fetchProjectDetails = async () => {
       if (!project.id || !currentWorkspace?.id) return;
@@ -119,7 +113,7 @@ export function ActivityTab({
         const projectData = await fetchProjectById(project.id, currentWorkspace.id);
         if (projectData) {
           setProjectDetails({
-            project_type: projectData.project_type || null,
+            project_type: (projectData as any).project_type || null,
           });
         }
       } catch (error) {
@@ -131,51 +125,35 @@ export function ActivityTab({
     fetchProjectDetails();
   }, [project.id, currentWorkspace?.id]);
 
-  // Local state for notes
   const [quickNote, setQuickNote] = useState(project.quickNote || '');
   const [notes, setNotes] = useState(project.note || '');
   const [isSavingQuickNote, setIsSavingQuickNote] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
-  // Delete client confirmation
   const [deleteClientDialogOpen, setDeleteClientDialogOpen] = useState(false);
   const [isDeletingClient, setIsDeletingClient] = useState(false);
-
-  // Delete project confirmation
   const [deleteProjectDialogOpen, setDeleteProjectDialogOpen] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
 
-  // Update local state when project changes
   useEffect(() => {
     setQuickNote(project.quickNote || '');
     setNotes(project.note || '');
   }, [project.quickNote, project.note]);
 
-  // Permission checks for Client Documents component
   const canViewClientDocuments = can('component.activity_projectdocuments.view');
   const canEditClientDocuments = can('component.activity_projectdocuments.edit');
-  // Client Documents edit permission is independent - only check the specific edit permission
-  // If user doesn't have edit permission, Client Documents should be read-only
   const clientDocumentsReadOnly = !canEditClientDocuments;
-  
-  // Permission checks for Assign Staff component (Client Information section)
+
   const canViewAssignStaff = can('component.activity_assignstaff.view');
   const canEditAssignStaff = can('component.activity_assignstaff.edit');
-  // Assign Staff edit permission is independent - only check the specific edit permission
-  // If user doesn't have edit permission, Assign Staff should be read-only
   const assignStaffReadOnly = !canEditAssignStaff;
-  
-  // Permission checks for Assign Crew component (Project Information section)
+
   const canViewAssignCrew = can('component.activity_assigncrew.view');
   const canEditAssignCrew = can('component.activity_assigncrew.edit');
-  // Assign Crew edit permission is independent - only check the specific edit permission
-  // If user doesn't have edit permission, Assign Crew should be read-only
   const assignCrewReadOnly = !canEditAssignCrew;
-  
-  // Permission check for viewing prices in Activity tab
+
   const canViewPrices = can('component.activity_viewprices.view');
 
-  // Calculate totals
   const { taxRate } = useWorkspaceTaxRate();
   const labor = activeDraftItems.filter((i) => i.kind === "labor").reduce((a, i) => a + i.qty * i.unitPrice, 0);
   const mats = activeDraftItems
@@ -185,8 +163,8 @@ export function ActivityTab({
   const contractTotal = (labor + mats + tax) * activeDraftMultiplier;
 
   const changeOrdersTotal = changeOrderVersions.filter(co => co.is_active).reduce((total, changeOrder) => {
-    const { laborSub, matSub, tax } = computeTotals(changeOrder.items || [], taxRate);
-    const sub = laborSub + matSub + tax;
+    const { laborSub, matSub, tax: coTax } = computeTotals(changeOrder.items || [], taxRate);
+    const sub = laborSub + matSub + coTax;
     const grand = sub * (Number(changeOrder.multiplier) || 1);
     return total + grand;
   }, 0);
@@ -195,29 +173,15 @@ export function ActivityTab({
   const totalPaid = incoming.reduce((sum, payment) => sum + payment.amount, 0);
   const balance = projectTotal - totalPaid;
 
-  // Calculate individual payment amounts and filter non-zero payments
   const allPayments = [
     { label: '1st Payment', percentage: paymentSplits[0], amount: projectTotal * (paymentSplits[0] / 100) },
     { label: '2nd Payment', percentage: paymentSplits[1], amount: projectTotal * (paymentSplits[1] / 100) },
     { label: '3rd Payment', percentage: paymentSplits[2], amount: projectTotal * (paymentSplits[2] / 100) },
     { label: 'Last Payment', percentage: paymentSplits[3], amount: projectTotal * (paymentSplits[3] / 100) }
   ];
-  
   const activePayments = allPayments.filter(p => p.percentage > 0);
   const numberOfPayments = activePayments.length;
 
-  // Calculate next payment (first unpaid payment)
-  let nextPaymentAmount = 0;
-  let runningTotal = 0;
-  for (const payment of activePayments) {
-    if (runningTotal + payment.amount > totalPaid) {
-      nextPaymentAmount = payment.amount - (totalPaid - runningTotal);
-      break;
-    }
-    runningTotal += payment.amount;
-  }
-
-  // Handle quick note save
   const handleQuickNoteSave = async () => {
     if (readOnly || !currentWorkspace || !user) return;
     setIsSavingQuickNote(true);
@@ -232,7 +196,6 @@ export function ActivityTab({
     }
   };
 
-  // Handle notes save
   const handleNotesSave = async () => {
     if (readOnly || !currentWorkspace || !user) return;
     setIsSavingNotes(true);
@@ -247,20 +210,17 @@ export function ActivityTab({
     }
   };
 
-  // Handle status change
   const handleStatusChange = async (newStatus: string) => {
-    if (!currentWorkspace || !user) return;
+    if (!currentWorkspace) return;
 
-    // Check if user has permission to change to this status
     if (!canChangeToStatus(newStatus, project.status, can)) {
       toast.error(`You don't have permission to change status to "${newStatus}"`);
       return;
     }
 
     try {
-      await updateProjectStatus(project.id, newStatus, currentWorkspace.id, user?.id);
+      await updateProjectStatus(project.id, newStatus, currentWorkspace.id);
       toast.success("Status updated successfully");
-      // Note: The parent component should handle refreshing the project data
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
@@ -299,16 +259,12 @@ export function ActivityTab({
     }
   };
 
-  // Filter status options based on permissions
   const allowedStatuses = filterAllowedStatuses(projectStatuses, project.status, can);
-  
-  // Check if dropdown should be disabled
   const canEditActivity = can('tab.projects_activity.view') && can('tab.projects_activity.edit');
   const isStatusDropdownDisabled = checkStatusDropdownDisabled(project.status, can, canEditActivity && !readOnly);
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards - fully hidden when client view (hidden) is active */}
       {canViewPrices && !hidden && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="text-center">
@@ -343,18 +299,9 @@ export function ActivityTab({
               <p className="text-xl font-semibold text-orange-600"><Money value={balance} /></p>
             </CardContent>
           </Card>
-          {/* Next Payment card - commented out
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <p className="text-muted-foreground text-sm mb-1">Next Payment</p>
-              <p className="text-xl font-semibold"><Money value={nextPaymentAmount} /></p>
-            </CardContent>
-          </Card>
-          */}
         </div>
       )}
 
-      {/* Project Information */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Project Information</CardTitle>
@@ -368,8 +315,9 @@ export function ActivityTab({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={() => setDeleteProjectDialogOpen(true)}
+                    onClick={() => !isDemoMode() && setDeleteProjectDialogOpen(true)}
                     className="text-destructive focus:text-destructive"
+                    disabled={isDemoMode()}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete project
@@ -389,15 +337,11 @@ export function ActivityTab({
               <p className="text-sm text-muted-foreground">Address</p>
               <p className="font-medium">{project.residence || 'N/A'}</p>
             </div>
-            {projectDetails && (
-              <>
-                {projectDetails.project_type && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Project Type</p>
-                    <p className="font-medium">{projectDetails.project_type}</p>
-                  </div>
-                )}
-              </>
+            {projectDetails?.project_type && (
+              <div>
+                <p className="text-sm text-muted-foreground">Project Type</p>
+                <p className="font-medium">{projectDetails.project_type}</p>
+              </div>
             )}
             <div>
               <p className="text-sm text-muted-foreground mb-2">Status</p>
@@ -436,7 +380,6 @@ export function ActivityTab({
         </CardContent>
       </Card>
 
-      {/* Client Information */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Client Information</CardTitle>
@@ -450,8 +393,9 @@ export function ActivityTab({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={() => setDeleteClientDialogOpen(true)}
+                    onClick={() => !isDemoMode() && setDeleteClientDialogOpen(true)}
                     className="text-destructive focus:text-destructive"
+                    disabled={isDemoMode()}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete client
@@ -497,7 +441,6 @@ export function ActivityTab({
         </CardContent>
       </Card>
 
-      {/* Payment Breakdown - fully hidden when client view (hidden) is active */}
       {canViewPrices && !hidden && (
         <Card>
           <CardHeader>
@@ -520,7 +463,6 @@ export function ActivityTab({
         </Card>
       )}
 
-      {/* Notes Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -573,11 +515,7 @@ export function ActivityTab({
         </Card>
       </div>
 
-      {/* Client Documents Section */}
-      <Can 
-        permission="component.activity_projectdocuments.view"
-        fallback={null}
-      >
+      <Can permission="component.activity_projectdocuments.view" fallback={null}>
         <ProjectDocumentsSection
           projectId={project.id}
           project={project}
@@ -601,10 +539,7 @@ export function ActivityTab({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingClient}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleDeleteClient();
-              }}
+              onClick={(e) => { e.preventDefault(); handleDeleteClient(); }}
               disabled={isDeletingClient}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -625,10 +560,7 @@ export function ActivityTab({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingProject}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleDeleteProject();
-              }}
+              onClick={(e) => { e.preventDefault(); handleDeleteProject(); }}
               disabled={isDeletingProject}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

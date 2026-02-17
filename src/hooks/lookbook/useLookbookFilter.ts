@@ -100,19 +100,12 @@ export function useLookbookFilter(items: LookbookItem[], workspaceId: string | u
     }
 
     // Apply search filter
-    const searchFiltered = filtered.filter((item) => {
-      if (!searchTerm.trim()) return true;
-      const searchLower = searchTerm.toLowerCase();
-      const searchableText = [
-        item.title || '',
-        item.description || '',
-        item.brand || ''
-      ]
-        .filter(text => text.trim())
-        .join(' ')
-        .toLowerCase();
-      return searchableText.includes(searchLower);
-    });
+    const searchFiltered = filtered.filter((item) =>
+        [item.title, item.description, item.brand]
+          .join(' ')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+    );
 
     // Apply sorting
     if (sortBy === 'price-asc') {

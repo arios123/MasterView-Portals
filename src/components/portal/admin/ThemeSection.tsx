@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ColorPicker } from '@/components/ui/color-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,12 +62,7 @@ const COLOR_FIELDS: ColorField[] = [
   },
 ];
 
-interface ThemeSectionProps {
-  isCollapsible?: boolean;
-  isOpen?: boolean;
-}
-
-export function ThemeSection({ isCollapsible = false, isOpen = true }: ThemeSectionProps = {}) {
+export function ThemeSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -260,8 +251,15 @@ export function ThemeSection({ isCollapsible = false, isOpen = true }: ThemeSect
     );
   }
 
-  const cardContent = (
-    <CardContent className="space-y-6">
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Theme Customization</CardTitle>
+        <CardDescription>
+          Customize the color scheme for your workspace portal. Changes apply immediately when saved.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
         {/* Preset Themes Section */}
         {canEdit && (
           <div className="space-y-3 pb-6 border-b">
@@ -450,10 +448,12 @@ export function ThemeSection({ isCollapsible = false, isOpen = true }: ThemeSect
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">{field.description}</p>
-                <ColorPicker
-                  color={hexColors[field.key] || '#ffffff'}
-                  onChange={(color) => handleColorChange(field.key, color)}
+                <Input
+                  type="color"
+                  value={hexColors[field.key] || '#ffffff'}
+                  onChange={(e) => handleColorChange(field.key, e.target.value)}
                   disabled={!canEdit}
+                  className="h-10 w-full cursor-pointer disabled:cursor-not-allowed"
                 />
               </div>
             ))}
@@ -480,41 +480,7 @@ export function ThemeSection({ isCollapsible = false, isOpen = true }: ThemeSect
             </Button>
           </div>
         )}
-    </CardContent>
-  );
-
-  if (isCollapsible) {
-    return (
-      <Card>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle>Theme Customization</CardTitle>
-                <CardDescription>
-                  Customize the color scheme for your workspace portal. Changes apply immediately when saved.
-                </CardDescription>
-              </div>
-              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "transform rotate-180")} />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {cardContent}
-        </CollapsibleContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Theme Customization</CardTitle>
-        <CardDescription>
-          Customize the color scheme for your workspace portal. Changes apply immediately when saved.
-        </CardDescription>
-      </CardHeader>
-      {cardContent}
+      </CardContent>
     </Card>
   );
 }

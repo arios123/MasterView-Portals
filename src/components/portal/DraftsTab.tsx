@@ -22,7 +22,7 @@ interface DraftsTabProps {
   onSetAsActive: () => void;
   onDeleteVersion: (versionId?: string) => void;
   onMarkAsSold: (versionId: string) => void;
-  getVersionStatusColor: (status: string, isActive: boolean, isChangeOrderActive?: boolean) => string;
+  getVersionStatusColor: (status: string, isActive: boolean) => string;
   getDisplayStatus: (status: string, isActive: boolean, isChangeOrderActive?: boolean) => string;
   readOnly?: boolean;
 }
@@ -161,7 +161,7 @@ export function DraftsTab({
                 return (
                   <div key={version.version_id} className="space-y-2">
                     <div 
-                      className={`border rounded-xl p-3 ${getVersionStatusColor(version.status, version.isActive, version.is_active)} cursor-pointer hover:shadow-sm transition-shadow`}
+                      className={`border rounded-xl p-3 ${getVersionStatusColor(version.status, version.isActive)} cursor-pointer hover:shadow-sm transition-shadow`}
                     >
                       <div className="flex items-center gap-3">
                         {canModify && (
@@ -203,7 +203,7 @@ export function DraftsTab({
                                   <Switch
                                     checked={version.is_active || false}
                                     onCheckedChange={() => onToggleChangeOrderActive(version.version_id, version.is_active || false)}
-                                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted"
+                                    className="data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                                     disabled={!canEditChangeOrdersSetActive}
                                   />
                                 </div>

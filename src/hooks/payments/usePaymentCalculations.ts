@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { PaymentCalculations } from '@/types/payments';
 import type { IncomingPayment, OutgoingPayment } from '@/types/payments';
-import { useWorkspaceTaxRate } from '@/hooks/useWorkspaceTaxRate';
 
 interface UsePaymentCalculationsProps {
   activeDraftItems: any[];
@@ -18,8 +17,6 @@ export function usePaymentCalculations({
   incomingPayments,
   outgoingPayments,
 }: UsePaymentCalculationsProps): PaymentCalculations {
-  const { taxRate } = useWorkspaceTaxRate();
-  
   return useMemo(() => {
     // Calculate contract total
     const laborTotal = activeDraftItems
@@ -40,7 +37,7 @@ export function usePaymentCalculations({
         return sum + (qtyWithWaste * unitPrice);
       }, 0);
 
-    const materialTax = materialTotal * taxRate;
+    const materialTax = materialTotal * 0.06;
     const subtotal = laborTotal + materialTotal + materialTax;
     const multiplier = Number(activeDraftMultiplier) || 1;
     const contractTotal = subtotal * multiplier;
@@ -61,7 +58,7 @@ export function usePaymentCalculations({
         return mSum + (qtyWithWaste * unitPrice);
       }, 0);
 
-      const coMaterialTax = coMaterialTotal * taxRate;
+      const coMaterialTax = coMaterialTotal * 0.06;
       const coSubtotal = coLaborTotal + coMaterialTotal + coMaterialTax;
       const coMultiplier = Number(co.multiplier) || 1;
       return sum + (coSubtotal * coMultiplier);
@@ -87,6 +84,6 @@ export function usePaymentCalculations({
       totalSpentOnProject,
       totalProfit,
     };
-  }, [activeDraftItems, activeDraftMultiplier, activeChangeOrders, incomingPayments, outgoingPayments, taxRate]);
+  }, [activeDraftItems, activeDraftMultiplier, activeChangeOrders, incomingPayments, outgoingPayments]);
 }
 

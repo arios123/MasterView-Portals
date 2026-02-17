@@ -3,9 +3,6 @@ import { Plus, Trash2, GripVertical, Edit2, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -163,12 +160,7 @@ function SortableAttachmentFolder({ folder, onUpdate, onDelete, onPermissionsCli
   );
 }
 
-interface AttachmentFoldersSectionProps {
-  isCollapsible?: boolean;
-  isOpen?: boolean;
-}
-
-export function AttachmentFoldersSection({ isCollapsible = false, isOpen = true }: AttachmentFoldersSectionProps = {}) {
+export function AttachmentFoldersSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -339,8 +331,16 @@ export function AttachmentFoldersSection({ isCollapsible = false, isOpen = true 
     }
   };
 
-  const cardContent = (
-    <CardContent className="space-y-4">
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Attachment Folders</CardTitle>
+          <CardDescription>
+            Manage attachment folder types for your workspace. Each folder represents a category that can be used to organize project attachments.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <Can permission="tab.admin_workspacesetup.edit">
             <div className="flex gap-2">
               <Input
@@ -388,73 +388,7 @@ export function AttachmentFoldersSection({ isCollapsible = false, isOpen = true 
               </div>
             )}
           </div>
-    </CardContent>
-  );
-
-  if (isCollapsible) {
-    return (
-      <>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <CardTitle>Attachment Folders</CardTitle>
-                  <CardDescription>
-                    Manage attachment folder types for your workspace. Each folder represents a category that can be used to organize project attachments.
-                  </CardDescription>
-                </div>
-                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "transform rotate-180")} />
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            {cardContent}
-          </CollapsibleContent>
-        </Card>
-
-        <ConfirmDeleteDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          onConfirm={handleConfirmDelete}
-          title="Delete Attachment Folder"
-          description={
-            folderToDelete
-              ? `Are you sure you want to delete "${folderToDelete.name}"? This folder contains ${folderToDelete.fileCount} file(s) across projects. Files will remain in storage but won't be accessible. This action cannot be undone.`
-              : ''
-          }
-        />
-
-        {selectedFolderForPermissions && (
-          <AttachmentFolderPermissionsDialog
-            open={permissionsDialogOpen}
-            onOpenChange={(open) => {
-              setPermissionsDialogOpen(open);
-              if (!open) {
-                setSelectedFolderForPermissions(null);
-              }
-            }}
-            folderId={selectedFolderForPermissions.id}
-            folderName={selectedFolderForPermissions.name}
-            onPermissionsUpdated={() => {
-              // Permissions updated - no need to reload folders, but could refresh if needed
-            }}
-          />
-        )}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Attachment Folders</CardTitle>
-          <CardDescription>
-            Manage attachment folder types for your workspace. Each folder represents a category that can be used to organize project attachments.
-          </CardDescription>
-        </CardHeader>
-        {cardContent}
+        </CardContent>
       </Card>
 
       <ConfirmDeleteDialog

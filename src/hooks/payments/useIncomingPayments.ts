@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { IncomingPayment } from '@/types/payments';
 import { useLocalStorageCache, getCacheKey } from '@/hooks/useLocalStorageCache';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface UseIncomingPaymentsProps {
   projectId: string;
@@ -91,6 +92,10 @@ export function useIncomingPayments({
   }, [incomingPaymentsData]);
 
   const handleAdd = async () => {
+    if (isDemoMode()) {
+      toast.info('Adding payments is disabled in demo mode.');
+      return;
+    }
     if (!incomingForm.amount || !incomingForm.date) {
       toast.error('Please enter date and amount');
       return;
@@ -148,6 +153,10 @@ export function useIncomingPayments({
   };
 
   const handleSave = async (paymentId: string) => {
+    if (isDemoMode()) {
+      toast.info('Saving payments is disabled in demo mode.');
+      return;
+    }
     if (!workspaceId || !userId) return;
 
     // Validate required fields
@@ -204,13 +213,17 @@ export function useIncomingPayments({
   };
 
   const handleDelete = async () => {
+    if (isDemoMode()) {
+      toast.info('Deleting payments is disabled in demo mode.');
+      return;
+    }
     if (!deleteId || !workspaceId) return;
 
     try {
       const { error } = await (supabase as any)
         .from('payments')
         .delete()
-        .eq('payment_id', deleteId)
+        .eq('id', deleteId)
         .eq('workspace_id', workspaceId);
 
       if (error) throw error;

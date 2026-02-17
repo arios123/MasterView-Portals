@@ -38,7 +38,8 @@ export type LineItem = {
   unitPrice: number;
   wastePct?: number; // materials only
   link?: string;
-  isDeleted?: boolean; // For change orders: marks item as deleted but keeps it visible
+  /** When true, item is shown as removed (strikethrough, red border) and excluded from totals; used in change orders. */
+  isDeleted?: boolean;
 };
 
 export type IncomingPayment = {
@@ -61,17 +62,16 @@ export type OutgoingPayment = {
 
 export type EventItem = {
   id: string;
-  title: string; // NEW: Event title (required)
-  clientId?: string; // Now optional
-  clientName?: string; // Now optional
-  projectId?: string; // NEW: FK to projects
-  projectType?: string; // Now optional
-  appointmentTypeId?: string; // Now optional
+  title: string;
+  clientId?: string;
+  clientName?: string;
+  projectId?: string;
+  projectType?: string;
+  appointmentTypeId?: string;
   address?: string;
-  assignedTo: string[]; // Keep for backward compatibility
+  assignedTo: string[];
   date: string;
   time: string;
-  // REMOVED: notes, phone, email
 };
 
 export type User = {

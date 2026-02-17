@@ -51,19 +51,17 @@ export interface EventFormData {
   title?: string;
   date?: string;
   time?: string;
-  
   // Optional fields
   clientId?: string;
   clientName?: string;
   appointmentTypeId?: string;
-  projectId?: string; // NEW: Selected project ID
+  projectId?: string;
   projectType?: string;
   address?: string;
-  
   // New project fields (when creating project from event)
   projectName?: string;
-  
-  // REMOVED: notes, assignedToUserId
+  notes?: string;
+  assignedToUserId?: string;
 }
 
 // Loading states for event operations

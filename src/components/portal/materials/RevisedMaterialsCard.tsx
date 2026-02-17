@@ -232,8 +232,8 @@ export function RevisedMaterialsCard({
                       </div>
                     )}
                     {/* Mobile: Qty, Price, Total with labels */}
-                    <div className="flex items-end gap-2 md:hidden mt-1">
-                      <div className="flex flex-col gap-0.5">
+                    <div className="flex items-end gap-3 md:hidden mt-1">
+                      <div className="flex flex-col gap-0.5 min-w-[3.5rem]">
                         <span className="text-[10px] text-muted-foreground">Qty</span>
                         <Input
                           type="number"
@@ -253,7 +253,7 @@ export function RevisedMaterialsCard({
                       </div>
                       {!hidden && showPrice && (
                         <>
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-0.5 min-w-[4.5rem]">
                             <span className="text-[10px] text-muted-foreground">Price</span>
                             <Input
                               type="number"
@@ -271,7 +271,7 @@ export function RevisedMaterialsCard({
                               disabled={readOnly}
                             />
                           </div>
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-0.5 min-w-[4rem]">
                             <span className="text-[10px] text-muted-foreground">Total</span>
                             <span className="text-xs font-medium h-6 flex items-center">{money(it.qty * it.price)}</span>
                           </div>
@@ -298,8 +298,8 @@ export function RevisedMaterialsCard({
                     )}
                   </div>
                   {/* Desktop: Qty, Price, Total with labels */}
-                  <div className="hidden md:flex items-end gap-2">
-                    <div className="flex flex-col gap-0.5">
+                  <div className="hidden md:flex items-end gap-3 shrink-0">
+                    <div className="flex flex-col gap-0.5 min-w-[3.5rem]">
                       <span className="text-[10px] text-muted-foreground">Qty</span>
                       <Input
                         type="number"
@@ -319,7 +319,7 @@ export function RevisedMaterialsCard({
                     </div>
                     {!hidden && showPrice && (
                       <>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-0.5 min-w-[4.5rem]">
                           <span className="text-[10px] text-muted-foreground">Price</span>
                           <Input
                             type="number"
@@ -337,7 +337,7 @@ export function RevisedMaterialsCard({
                             disabled={readOnly}
                           />
                         </div>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-0.5 min-w-[4rem]">
                           <span className="text-[10px] text-muted-foreground">Total</span>
                           <span className="text-xs font-medium h-6 flex items-center">{money(it.qty * it.price)}</span>
                         </div>
@@ -348,9 +348,9 @@ export function RevisedMaterialsCard({
               );
             })}
             {!hidden && showPrice && group.length > 1 && (
-              <div className="flex justify-between text-[10px] text-muted-foreground border-t pt-1 mt-1">
+              <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-1">
                 <span>Merged Total for {base}</span>
-                <span>
+                <span className="font-medium">
                   {money(group.reduce((s, i) => s + i.qty * i.price, 0))} ({group.reduce((s, i) => s + i.qty, 0)} qty)
                 </span>
               </div>

@@ -13,49 +13,42 @@ export interface LookbookItem {
   collection?: string;
 }
 
-// Dynamic question type (from database)
-export interface LookbookQuestion {
+// Question field configuration
+export interface QuestionField {
   id: string;
-  workspace_id: string;
-  project_id: string;
-  client_id?: string | null; // Kept for potential future use, but nullable since we're starting fresh
   label: string;
-  is_long: boolean;
-  display_order: number;
-  created_by?: string | null;
-  created_at: string;
-  updated_by?: string | null;
-  updated_at: string;
+  long?: boolean;
 }
 
-// Dynamic answer type (from database)
-export interface LookbookAnswer {
-  id: string;
-  question_id: string;
-  project_id: string;
-  workspace_id: string;
-  answer_text: string;
-  created_by?: string | null;
-  created_at: string;
-  updated_by?: string | null;
-  updated_at: string;
-}
-
-// Default question type (from database) - workspace-level defaults
-export interface LookbookDefaultQuestion {
-  id: string;
-  workspace_id: string;
-  label: string;
-  is_long: boolean;
-  display_order: number;
-  created_by?: string | null;
-  created_at: string;
-  updated_by?: string | null;
-  updated_at: string;
-}
-
-// Lookbook answers map (question_id -> answer_text)
+// Lookbook questions (form answers)
 export type LookbookAnswers = Record<string, string>;
+
+// Question fields schema
+export const QUESTION_FIELDS: QuestionField[] = [
+  { id: "budget", label: "Budget" },
+  { id: "timeline", label: "Timeline" },
+  { id: "mainGoal", label: "Main goal", long: true },
+  { id: "liveInHome", label: "Live in home during project?" },
+  { id: "houseTypeAge", label: "House type & age" },
+  { id: "projectFloor", label: "Project floor" },
+  { id: "foundation", label: "Foundation" },
+  { id: "hoa", label: "HOA rules" },
+  { id: "pastRenos", label: "Past renos / issues", long: true },
+  { id: "finishesColors", label: "Finishes & colors" },
+  { id: "changesWanted", label: "Changes wanted", long: true },
+  { id: "style", label: "Style" },
+  { id: "inspo", label: "Inspiration links", long: true },
+  { id: "useOfSpace", label: "Use of space", long: true },
+  { id: "kidsPets", label: "Kids / pets / access" },
+  { id: "storageNeeds", label: "Storage needs" },
+  { id: "stayDuration", label: "How long will you stay?" },
+  { id: "electrical", label: "Electrical updates?" },
+  { id: "gasType", label: "Gas type" },
+  { id: "water", label: "Water source" },
+  { id: "hvac", label: "HVAC issues" },
+  { id: "workRestrictions", label: "Work restrictions" },
+  { id: "permits", label: "Permits" },
+];
 
 // Default subcategories (can be extended by data)
 export const DEFAULT_SUBCATEGORIES = [

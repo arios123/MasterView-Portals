@@ -71,10 +71,12 @@ export function AdminAuditLog() {
   // Load audit logs
   useEffect(() => {
     if (!workspaceId) {
+      console.log('AdminAuditLog: No workspaceId available');
       setLoading(false);
       return;
     }
 
+    console.log('AdminAuditLog: Loading logs for workspace:', workspaceId);
     const loadLogs = async () => {
       setLoading(true);
       setError(null);
@@ -275,17 +277,17 @@ export function AdminAuditLog() {
             <div className="text-center py-8 text-muted-foreground">No audit logs found</div>
           ) : (
             <>
-              <div className="rounded-md border overflow-auto" style={{ maxHeight: '600px' }}>
+              <ScrollArea className="h-[600px] rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap">Date & Time</TableHead>
-                      <TableHead className="whitespace-nowrap">User</TableHead>
-                      <TableHead className="whitespace-nowrap">Action</TableHead>
-                      <TableHead className="whitespace-nowrap">Resource Type</TableHead>
-                      <TableHead className="whitespace-nowrap">Resource ID</TableHead>
-                      <TableHead className="whitespace-nowrap">Location</TableHead>
-                      <TableHead className="whitespace-nowrap">Details</TableHead>
+                      <TableHead>Date & Time</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Resource Type</TableHead>
+                      <TableHead>Resource ID</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Details</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -294,22 +296,22 @@ export function AdminAuditLog() {
                         <TableCell className="whitespace-nowrap">
                           {log.created_at ? format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss') : 'N/A'}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell>
                           {log.user_name || log.user_email || 'Unknown User'}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell>
                           <Badge variant={getActionBadgeVariant(log.action)}>
                             {log.action}
                           </Badge>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell>
                           {log.resource_type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                         </TableCell>
-                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                        <TableCell className="font-mono text-xs">
                           {log.resource_id ? `${log.resource_id.substring(0, 8)}...` : 'N/A'}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">{log.resource_location || 'N/A'}</TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell>{log.resource_location || 'N/A'}</TableCell>
+                        <TableCell>
                           <Button
                             variant="outline"
                             size="sm"
@@ -322,7 +324,7 @@ export function AdminAuditLog() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+              </ScrollArea>
 
               {/* Pagination */}
               <div className="flex items-center justify-between mt-4">
@@ -361,7 +363,7 @@ export function AdminAuditLog() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Audit Log Details</DialogTitle>
             <DialogDescription>

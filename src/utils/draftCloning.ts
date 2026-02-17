@@ -31,6 +31,12 @@ export async function cloneDraftVersion(
 ): Promise<CloneDraftVersionResult> {
   const { sourceVersionId, projectId, workspaceId, userId, newDraftName } = params;
 
+  // COMMENTED OUT IN DEMO MODE - demo is read-only
+  const { blockDemoWrite } = await import('@/utils/demoMode');
+  if (blockDemoWrite('clone draft version')) {
+    return { success: false, error: 'Demo mode is read-only' };
+  }
+
   try {
     // 1. Fetch the source project_versions record
     const { data: sourceVersion, error: fetchError } = await (supabase as any)
@@ -194,10 +200,16 @@ export async function cloneDraftVersion(
       if (revisionsInsertError) throw revisionsInsertError;
     }
 
-    // CRITICAL: active_version is NEVER set here - let the caller decide based on version type
-    // This prevents change orders from incorrectly becoming the active version.
-    // Change orders must NEVER update active_version in the projects table.
-    // Only drafts can be set as active_version. Change orders use is_active field instead.
+    // 7. Set new draft as active_version on the project
+    const { error: updateActiveError } = await (supabase as any)
+      .from("projects")
+      .update({ active_version: newVersionId })
+      .eq("project_id", projectId);
+
+    if (updateActiveError) {
+      console.error("Error updating active version:", updateActiveError);
+      // Don't throw - the draft was created successfully
+    }
 
     return {
       success: true,

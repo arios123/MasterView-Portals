@@ -14,7 +14,6 @@ interface RollForwardDraftParams {
   estimatedStartDate?: Date;
   estimatedConstructionTime?: number;
   versionType: 'draft' | 'change-order';
-  sourceVersionIdForChangeOrder?: string | null; // For change orders: what version this was created from
 }
 
 interface RollForwardDraftResult {
@@ -50,7 +49,6 @@ export async function rollForwardDraft(
     estimatedStartDate,
     estimatedConstructionTime,
     versionType,
-    sourceVersionIdForChangeOrder,
   } = params;
 
   try {
@@ -100,25 +98,18 @@ export async function rollForwardDraft(
     }
 
     // 3. Update the new version with Quote Builder settings (multiplier, payment splits, estimated dates)
-    const updateData: any = {
-      multiplier,
-      payment_1_percentage: paymentSplits[0] || 0,
-      payment_2_percentage: paymentSplits[1] || 0,
-      payment_3_percentage: paymentSplits[2] || 0,
-      payment_4_percentage: paymentSplits[3] || 0,
-      estimated_start_date: sourceEstimatedStartDate ? sourceEstimatedStartDate.toISOString().split('T')[0] : null,
-      estimated_construction_time: sourceEstimatedConstructionTime ?? null,
-      status: versionType === 'change-order' ? 'Change Order' : 'Draft',
-    };
-
-    // For change orders, store source_version_id
-    if (versionType === 'change-order' && sourceVersionIdForChangeOrder !== undefined) {
-      updateData.source_version_id = sourceVersionIdForChangeOrder;
-    }
-
     const { error: updateVersionError } = await supabase
       .from('project_versions')
-      .update(updateData)
+      .update({
+        multiplier,
+        payment_1_percentage: paymentSplits[0] || 0,
+        payment_2_percentage: paymentSplits[1] || 0,
+        payment_3_percentage: paymentSplits[2] || 0,
+        payment_4_percentage: paymentSplits[3] || 0,
+        estimated_start_date: sourceEstimatedStartDate ? sourceEstimatedStartDate.toISOString().split('T')[0] : null,
+        estimated_construction_time: sourceEstimatedConstructionTime ?? null,
+        status: versionType === 'change-order' ? 'Change Order' : 'Draft',
+      })
       .eq('version_id', newVersionId);
 
     if (updateVersionError) throw updateVersionError;
@@ -387,9 +378,7 @@ export async function rollForwardDraft(
       }
     }
 
-    // 11. Set as active version (for drafts only, NEVER for change orders)
-    // CRITICAL: Change orders must NEVER update active_version in the projects table.
-    // active_version is only for drafts. Change orders use is_active field on project_versions instead.
+    // 11. Set as active version (for drafts only, not change orders)
     if (versionType === 'draft') {
       const { error: updateActiveError } = await supabase
         .from('projects')
@@ -401,7 +390,6 @@ export async function rollForwardDraft(
         // Don't throw - the draft was created successfully
       }
     }
-    // Note: When versionType === 'change-order', we explicitly do NOT update active_version
 
     return {
       success: true,

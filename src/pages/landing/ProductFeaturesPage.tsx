@@ -1,124 +1,139 @@
-import { ArrowRight, Layers } from "lucide-react";
+import { ArrowRight, Sparkles, ShieldCheck, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeaderLinks } from "./HeaderLinks";
 import { Footer } from "./Footer";
-import { allFeatures } from "./featuresData";
-import { ProductFeaturesSection } from "./ProductFeaturesSection";
-import { Card } from "@/components/ui/card";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { features } from "./Features";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function ProductFeaturesPage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
-
-  const backgroundY = useTransform(scrollYProgress, [0, 1], [0, -100]);
-
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#e7ebed]">
+    <div className="min-h-screen bg-white animate-fade-in-up">
       <HeaderLinks />
 
       <main>
-        <section className="relative pt-16 pb-24 lg:pt-20 lg:py-32 bg-[#e7ebed] overflow-hidden">
-          <motion.div
-            style={{ y: backgroundY }}
-            className="absolute inset-0 blueprint-grid-landing"
-          />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#a6dbeb]/30 rounded-full blur-3xl opacity-50" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#e7ebed] rounded-full blur-3xl opacity-60" />
-
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="max-w-3xl mx-auto text-center mb-16 lg:mb-20">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#a6dbeb]/40 border border-[#a6dbeb] mb-6"
-              >
-                <Layers className="w-4 h-4 text-[#2b8ac4]" />
-                <span className="text-sm font-medium text-[#0B294b]">
-                  Everything You Need
-                </span>
-              </motion.div>
-              <motion.h2
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: 0.1 }}
-                className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0B294b] leading-tight mb-6"
-              >
-                Everything your team{" "}
-                <span className="text-gradient-features">needs</span>
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-lg text-[#617b5d] leading-relaxed max-w-2xl mx-auto"
-              >
-                Purpose-built workflows for contract-based work — from first estimate to project completion.
-              </motion.p>
+        <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white">
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute w-64 h-64 bg-emerald-400/30 blur-3xl rounded-full -top-10 -left-10" />
+            <div className="absolute w-80 h-80 bg-cyan-400/25 blur-3xl rounded-full bottom-0 right-10" />
+          </div>
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+            <div className="max-w-4xl">
+              <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm font-semibold border border-white/10 mb-4">
+                <Sparkles className="h-4 w-4" />
+                Galaxy of Features
+              </p>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                The complete operating system for design & renovation teams
+              </h1>
+              <p className="text-lg text-slate-200 max-w-3xl mb-8">
+                From quoting to client approvals to final payment, every step lives in one cohesive portal. Ship faster, keep clients informed, and give your team the clarity they need.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400" asChild>
+                  <a href="/register">
+                    Start free trial
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </a>
+                </Button>
+                <Button size="lg" variant="outline" className="bg-white text-slate-900 border-white/30 hover:bg-slate-900 hover:text-white" asChild>
+                  <a href="/login">Sign in</a>
+                </Button>
+              </div>
             </div>
-
-            <ProductFeaturesSection features={allFeatures} />
           </div>
         </section>
 
-        {/* Additional Features */}
-        {/* CTA Section */}
-        <section className="py-24 bg-[#e7ebed] relative overflow-hidden">
-          <div className="absolute inset-0 bg-grid opacity-20" />
-          
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="max-w-4xl mx-auto"
-            >
-              <Card className="bg-white rounded-2xl border border-[#cfcfcf] shadow-smooth-lg p-8 lg:p-12 text-center">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <h3 className="font-serif text-3xl sm:text-4xl font-bold text-[#0B294b] mb-4">
-                    Ready to get started?
-                  </h3>
-                  <p className="text-lg text-[#617b5d] mb-8 max-w-2xl mx-auto">
-                    Start your free trial and see how contract-aware workflows can transform how you manage projects.
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-4">
-                    <Button
-                      size="lg"
-                      className="text-base px-8 py-6 rounded-xl bg-[#2b8ac4] hover:bg-[#46b7d7] text-white transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                      asChild
-                    >
-                      <a href="/register">
-                        Start free trial
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </a>
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="text-base px-8 py-6 rounded-xl bg-transparent text-[#0B294b] border-[#cfcfcf] hover:bg-[#e7ebed] hover:border-[#8b8b8b] transition-all duration-200"
-                      asChild
-                    >
-                      <a href="/pricing">See pricing</a>
-                    </Button>
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-6 md:grid-cols-3">
+              <Card className="border-slate-200 h-full">
+                <CardHeader>
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                    <Workflow className="h-5 w-5" />
                   </div>
-                </motion.div>
+                  <CardTitle>Project OS</CardTitle>
+                  <CardDescription>Quotes, schedules, change orders, documents, and payments all stay linked to each project.</CardDescription>
+                </CardHeader>
               </Card>
-            </motion.div>
+              <Card className="border-slate-200 h-full">
+                <CardHeader>
+                  <div className="w-10 h-10 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center mb-3">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <CardTitle>Client-grade portal</CardTitle>
+                  <CardDescription>Lookbooks, approvals, timelines, and updates in a clean, branded experience your clients love.</CardDescription>
+                </CardHeader>
+              </Card>
+              <Card className="border-slate-200 h-full">
+                <CardHeader>
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center mb-3">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <CardTitle>Role-based control</CardTitle>
+                  <CardDescription>Fine-grained permissions for designers, PMs, finance, vendors, and clients—keep sensitive data protected.</CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-10 bg-slate-50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <p className="text-sm font-semibold text-emerald-600 mb-2">Feature deep dive</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Everything your team needs</h2>
+              <p className="text-slate-600 max-w-2xl mx-auto mt-3">
+                Purpose-built workflows for renovation and design—from first estimate to project handoff.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <Card 
+                    key={index}
+                    className="border-slate-200 hover:border-emerald-200 transition-all duration-200 hover:shadow-lg bg-white"
+                  >
+                    <CardHeader>
+                      <div className="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center mb-4">
+                        <Icon className="h-5 w-5 text-emerald-700" />
+                      </div>
+                      <CardTitle className="text-lg">{feature.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-slate-600 text-sm">
+                        {feature.description}
+                      </CardDescription>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-slate-200 bg-slate-900 text-white px-8 py-10 md:py-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+              <div>
+                <p className="text-sm font-semibold text-emerald-300 mb-2">Ready to launch?</p>
+                <h3 className="text-2xl md:text-3xl font-bold mb-2">Onboard your team in minutes</h3>
+                <p className="text-slate-200 max-w-2xl">
+                  Invite your crew, set roles, and import projects. Your client-facing portal is ready on day one.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400" asChild>
+                  <a href="/register">
+                    Get started
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </a>
+                </Button>
+                <Button size="lg" variant="outline" className="bg-white text-slate-900 border-white/30 hover:bg-slate-900 hover:text-white" asChild>
+                  <a href="/login">Sign in</a>
+                </Button>
+              </div>
+            </div>
           </div>
         </section>
       </main>
@@ -127,3 +142,5 @@ export default function ProductFeaturesPage() {
     </div>
   );
 }
+
+

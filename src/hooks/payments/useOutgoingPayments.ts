@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OutgoingPayment } from '@/types/payments';
 import { useLocalStorageCache, getCacheKey } from '@/hooks/useLocalStorageCache';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface UseOutgoingPaymentsProps {
   projectId: string;
@@ -69,6 +70,10 @@ export function useOutgoingPayments({
   );
 
   const fetchOutgoingPayments = async () => {
+    if (isDemoMode()) {
+      setOutgoing([]);
+      return;
+    }
     const { data, error } = await supabase
       .from('outgoing_payments')
       .select('*')
@@ -105,6 +110,10 @@ export function useOutgoingPayments({
   }, [projectId]);
 
   const handleAdd = async () => {
+    if (isDemoMode()) {
+      toast.info('Adding outgoing payments is disabled in demo mode.');
+      return;
+    }
     if (!outgoingForm.item || !outgoingForm.date) {
       toast.error('Please enter date and item');
       return;
@@ -158,6 +167,10 @@ export function useOutgoingPayments({
   };
 
   const handleSave = async (paymentId: string) => {
+    if (isDemoMode()) {
+      toast.info('Saving outgoing payments is disabled in demo mode.');
+      return;
+    }
     if (!workspaceId || !userId) return;
 
     // Validate required fields
@@ -211,6 +224,10 @@ export function useOutgoingPayments({
   };
 
   const handleDelete = async () => {
+    if (isDemoMode()) {
+      toast.info('Deleting outgoing payments is disabled in demo mode.');
+      return;
+    }
     if (!deleteId || !workspaceId) return;
 
     try {

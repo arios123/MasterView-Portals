@@ -19,9 +19,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -147,12 +144,7 @@ function SortableSegmentItem({
   );
 }
 
-interface ProgressBarConfigSectionProps {
-  isCollapsible?: boolean;
-  isOpen?: boolean;
-}
-
-export function ProgressBarConfigSection({ isCollapsible = false, isOpen = true }: ProgressBarConfigSectionProps = {}) {
+export function ProgressBarConfigSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -360,8 +352,27 @@ export function ProgressBarConfigSection({ isCollapsible = false, isOpen = true 
 
   const previewPercentages = segments.map(seg => seg.percentage);
 
-  const cardContent = (
-    <CardContent className="space-y-6">
+  if (statusesLoading || configLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Progress Bar Configuration</CardTitle>
+          <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Progress Bar Configuration</CardTitle>
+        <CardDescription>
+          Configure how project statuses map to progress percentages. Drag statuses into segments and set their percentages.
+          Percentages can total up to 100%.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
         {/* Segment Count */}
         {canEdit && (
           <div className="space-y-2">
@@ -502,53 +513,6 @@ export function ProgressBarConfigSection({ isCollapsible = false, isOpen = true 
           </div>
         )}
       </CardContent>
-  );
-
-  if (statusesLoading || configLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Progress Bar Configuration</CardTitle>
-          <CardDescription>Loading...</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (isCollapsible) {
-    return (
-      <Card>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle>Progress Bar Configuration</CardTitle>
-                <CardDescription>
-                  Configure how project statuses map to progress percentages. Drag statuses into segments and set their percentages.
-                  Percentages can total up to 100%.
-                </CardDescription>
-              </div>
-              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "transform rotate-180")} />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {cardContent}
-        </CollapsibleContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Progress Bar Configuration</CardTitle>
-        <CardDescription>
-          Configure how project statuses map to progress percentages. Drag statuses into segments and set their percentages.
-          Percentages can total up to 100%.
-        </CardDescription>
-      </CardHeader>
-      {cardContent}
     </Card>
   );
 }

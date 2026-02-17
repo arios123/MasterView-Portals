@@ -1,410 +1,278 @@
-import { Shield, Lock, Database, HardDrive, RefreshCw, Eye, Server, CheckCircle2 } from "lucide-react";
+import { Shield, Lock, Database, HardDrive, RefreshCw, Eye, Server } from "lucide-react";
 import { HeaderLinks } from "./HeaderLinks";
 import { Footer } from "./Footer";
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import { useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function SecurityPage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const featuresScrollRef = useRef<HTMLDivElement>(null);
-  const measuresScrollRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { once: true, margin: "-100px" });
-  const [activeFeature, setActiveFeature] = useState(0);
-  const [activeMobileFeature, setActiveMobileFeature] = useState(0);
-  const [activeMobileMeasure, setActiveMobileMeasure] = useState(0);
-
-  const handleFeaturesScroll = () => {
-    if (!featuresScrollRef.current) return;
-    const scrollLeft = featuresScrollRef.current.scrollLeft;
-    const cardWidth = featuresScrollRef.current.offsetWidth * 0.85 + 16; // 85vw + gap
-    const index = Math.round(scrollLeft / cardWidth);
-    setActiveMobileFeature(index);
-  };
-
-  const handleMeasuresScroll = () => {
-    if (!measuresScrollRef.current) return;
-    const scrollLeft = measuresScrollRef.current.scrollLeft;
-    const cardWidth = measuresScrollRef.current.offsetWidth * 0.70 + 12; // 70vw + gap
-    const index = Math.round(scrollLeft / cardWidth);
-    setActiveMobileMeasure(index);
-  };
-  
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-  
-  const backgroundY = useTransform(scrollYProgress, [0, 1], [0, -100]);
-
-  const securityFeatures = [
-    {
-      icon: Lock,
-      title: "End-to-End Encryption",
-      shortDesc: "TLS 1.3 & AES-256",
-      description: "All data in transit is protected by industry-standard TLS 1.3 encryption protocols. Data at rest is encrypted using AES-256 encryption.",
-      highlights: ["TLS 1.3 in transit", "AES-256 at rest", "Zero plaintext storage"],
-    },
-    {
-      icon: Database,
-      title: "Row-Level Security",
-      shortDesc: "Hand-crafted RLS policies",
-      description: "Our database implements hand-crafted Row-Level Security (RLS) policies that have been meticulously reviewed and tested multiple times.",
-      highlights: ["Manual policy audits", "Per-user isolation", "Defense in depth"],
-    },
-    {
-      icon: Server,
-      title: "Network Isolation",
-      shortDesc: "Firewalls & private networks",
-      description: "Our infrastructure operates behind advanced network firewalls with strict ingress and egress rules. Database connections are isolated within private networks.",
-      highlights: ["Strict firewall rules", "Private subnets", "Encrypted pools"],
-    },
-    {
-      icon: Eye,
-      title: "Audit Logging",
-      shortDesc: "Complete activity trail",
-      description: "Every database operation, authentication attempt, and access request is logged with detailed metadata including timestamps and user identifiers.",
-      highlights: ["Full request logs", "Forensic analysis", "Real-time alerts"],
-    }
-  ];
-
-  const backupFeatures = [
-    {
-      icon: HardDrive,
-      title: "Off-Grid Backups",
-      description: "Air-gapped backups stored in physically secure locations, completely off the network for maximum protection against digital threats.",
-    },
-    {
-      icon: RefreshCw,
-      title: "Weekly Snapshots",
-      description: "Automated weekly backups with multiple restore points, enabling quick rollback to any point within the retention window.",
-    }
-  ];
-
-  const additionalMeasures = [
-    { title: "Role-Based Access Control", desc: "Fine-grained permissions at app and database levels" },
-    { title: "Secure Authentication", desc: "OAuth 2.0, JWT tokens, optional MFA" },
-    { title: "Rate Limiting", desc: "Protection against brute force attacks" },
-    { title: "Regular Audits", desc: "Continuous monitoring and patching" },
-  ];
-
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#e7ebed]">
+    <div className="min-h-screen bg-white animate-fade-in-up">
       <HeaderLinks />
 
       <main>
-        <section className="relative overflow-hidden bg-[#e7ebed]">
-          <motion.div
-            style={{ y: backgroundY }}
-            className="absolute inset-0 bg-grid opacity-30"
-          />
-          {/* Network mesh texture - right 40% of page */}
-          <div 
-            className="absolute top-0 right-0 bottom-0 w-[40%] network-mesh opacity-[0.85] pointer-events-none"
-            style={{ 
-              maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)',
-              WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)'
-            }}
-          />
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute w-[600px] h-[600px] bg-[#a6dbeb]/40 rounded-full blur-3xl -top-40 -right-40 animate-pulse-soft" />
-            <div className="absolute w-[500px] h-[500px] bg-[#a6dbeb]/25 rounded-full blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse-soft animation-delay-500" />
-            <div className="absolute w-[400px] h-[400px] bg-[#e7ebed]/60 rounded-full blur-3xl bottom-0 left-0 animate-pulse-soft animation-delay-1000" />
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white">
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute w-64 h-64 bg-emerald-400/30 blur-3xl rounded-full -top-10 -left-10" />
+            <div className="absolute w-80 h-80 bg-cyan-400/25 blur-3xl rounded-full bottom-0 right-10" />
           </div>
-
-          {/* Hero */}
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6 }}
-              className="max-w-4xl mx-auto text-center"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#a6dbeb]/40 border border-[#a6dbeb] mb-6"
-              >
-                <Shield className="w-4 h-4 text-[#2b8ac4]" />
-                <span className="text-sm font-medium text-[#2b8ac4]">Security</span>
-              </motion.div>
-              
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0B294b] leading-tight mb-4"
-              >
-                Enterprise-Grade <span className="text-[#2b8ac4]">Security</span>
-              </motion.h1>
-              
-              <motion.p
-                initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="text-base sm:text-lg text-[#617b5d] leading-relaxed max-w-2xl mx-auto"
-              >
-                Your data is protected by enterprise-grade security measures, carefully crafted access controls, and comprehensive backup strategies.
-              </motion.p>
-            </motion.div>
-          </div>
-
-          {/* Security Features - Horizontal scroll on mobile, interactive on desktop */}
-          <div className="relative z-10 py-8">
-            {/* Mobile: Horizontal scrolling cards */}
-            <div className="md:hidden">
-              <div 
-                ref={featuresScrollRef}
-                onScroll={handleFeaturesScroll}
-                className="flex gap-4 overflow-x-auto pb-4 px-4 snap-x snap-mandatory scrollbar-hide"
-              >
-                {securityFeatures.map((feature, index) => {
-                  const Icon = feature.icon;
-                  return (
-                    <div
-                      key={index}
-                      className="flex-shrink-0 w-[85vw] snap-center"
-                    >
-                      <div className="bg-white rounded-2xl border border-[#cfcfcf] p-5 h-full shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-[#a6dbeb]/40 flex items-center justify-center">
-                            <Icon className="w-6 h-6 text-[#2b8ac4]" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-[#0B294b] text-base">{feature.title}</h3>
-                            <p className="text-xs text-[#8b8b8b]">{feature.shortDesc}</p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-[#617b5d] leading-relaxed mb-4">{feature.description}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {feature.highlights.map((h, i) => (
-                            <span key={i} className="text-xs px-2 py-1 bg-[#e7ebed] rounded-full text-[#0B294b]">
-                              {h}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-center gap-2 mt-2">
-                {securityFeatures.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                      activeMobileFeature === i ? 'bg-[#2b8ac4]' : 'bg-[#cfcfcf]'
-                    }`} 
-                  />
-                ))}
-              </div>
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+            <div className="max-w-4xl mx-auto text-center">
+              <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm font-semibold border border-white/10 mb-4">
+                <Shield className="h-4 w-4" />
+                Security
+              </p>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                Your Data, Protected
+              </h1>
+              <p className="text-lg text-slate-200 max-w-3xl mx-auto">
+                We take security seriously. Your data is protected by enterprise-grade security measures, 
+                carefully crafted access controls, and comprehensive backup strategies.
+              </p>
             </div>
+          </div>
+        </section>
 
-            {/* Desktop: Interactive left-right layout */}
-            <div className="hidden md:block container mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="max-w-5xl mx-auto">
-                <div className="grid grid-cols-5 gap-8 items-start">
-                  {/* Left: Feature selector */}
-                  <div className="col-span-2 space-y-3">
-                    {securityFeatures.map((feature, index) => {
-                      const Icon = feature.icon;
-                      const isActive = activeFeature === index;
-                      return (
-                        <motion.button
-                          key={index}
-                          initial={{ opacity: 0, x: -30 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.4, delay: index * 0.1 }}
-                          onClick={() => setActiveFeature(index)}
-                          className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 ${
-                            isActive 
-                              ? "bg-white border-[#2b8ac4] shadow-lg shadow-[#2b8ac4]/10" 
-                              : "bg-white/50 border-[#cfcfcf] hover:bg-white hover:border-[#a6dbeb]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                              isActive ? "bg-[#a6dbeb]/40" : "bg-[#e7ebed]"
-                            }`}>
-                              <Icon className={`w-5 h-5 transition-colors ${isActive ? "text-[#2b8ac4]" : "text-[#0B294b]"}`} />
-                            </div>
-                            <div>
-                              <h3 className={`font-semibold text-sm transition-colors ${isActive ? "text-[#2b8ac4]" : "text-[#0B294b]"}`}>
-                                {feature.title}
-                              </h3>
-                              <p className="text-xs text-[#8b8b8b]">{feature.shortDesc}</p>
-                            </div>
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
+        {/* Security Features Section */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                  Enterprise-Grade Security Infrastructure
+                </h2>
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                  Our security architecture employs multiple layers of protection to ensure your data remains secure and accessible only to authorized users.
+                </p>
+              </div>
 
-                  {/* Right: Feature detail */}
-                  <div className="col-span-3">
-                    <motion.div
-                      key={activeFeature}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-white rounded-2xl border border-[#cfcfcf] shadow-xl p-8"
-                    >
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-14 h-14 rounded-xl bg-[#a6dbeb]/40 flex items-center justify-center">
-                          {(() => {
-                            const Icon = securityFeatures[activeFeature].icon;
-                            return <Icon className="w-7 h-7 text-[#2b8ac4]" />;
-                          })()}
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold text-[#0B294b]">{securityFeatures[activeFeature].title}</h3>
-                          <p className="text-sm text-[#8b8b8b]">{securityFeatures[activeFeature].shortDesc}</p>
-                        </div>
-                      </div>
-                      <p className="text-[#617b5d] leading-relaxed mb-6">{securityFeatures[activeFeature].description}</p>
-                      <div className="space-y-2">
-                        {securityFeatures[activeFeature].highlights.map((h, i) => (
-                          <motion.div
-                            key={i}
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.3, delay: i * 0.1 }}
-                            className="flex items-center gap-2"
-                          >
-                            <CheckCircle2 className="w-4 h-4 text-[#2b8ac4]" />
-                            <span className="text-sm text-[#0B294b]">{h}</span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
+              <div className="grid md:grid-cols-2 gap-6 mb-12">
+                <Card className="border-slate-200 bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
+                      <Lock className="h-6 w-6" />
+                    </div>
+                    <CardTitle>End-to-End Encryption</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      All data in transit is protected by industry-standard TLS 1.3 encryption protocols. 
+                      Data at rest is encrypted using AES-256 encryption, ensuring that even in the event of 
+                      physical access to storage systems, your information remains unreadable.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center mb-4">
+                      <Database className="h-6 w-6" />
+                    </div>
+                    <CardTitle>Row-Level Security Policies</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      Our database implements hand-crafted Row-Level Security (RLS) policies that have been 
+                      meticulously reviewed and tested multiple times. Each policy is manually audited to ensure 
+                      that users can only access data they are authorized to view, with granular permission controls 
+                      at the database level.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center mb-4">
+                      <Server className="h-6 w-6" />
+                    </div>
+                    <CardTitle>Network Isolation & Firewall Protection</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      Our infrastructure operates behind advanced network firewalls with strict ingress and egress 
+                      rules. Database connections are isolated within private networks, and all external access is 
+                      routed through secure, encrypted connection pools with automatic DDoS mitigation and rate limiting.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
+                      <Eye className="h-6 w-6" />
+                    </div>
+                    <CardTitle>Comprehensive Audit Logging</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      Every database operation, authentication attempt, and access request is logged with detailed 
+                      metadata including timestamps, user identifiers, and action types. This comprehensive audit 
+                      trail enables rapid security incident detection and forensic analysis.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Data Protection - Alternating layout */}
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="font-serif text-2xl sm:text-3xl font-bold text-[#0B294b] text-center mb-12"
-            >
-              Data Protection & Backups
-            </motion.h2>
+        {/* Data Protection & Backups Section */}
+        <section className="py-16 bg-slate-50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                  Data Protection & Backup Strategy
+                </h2>
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                  We employ a multi-layered backup strategy to ensure your data is always recoverable.
+                </p>
+              </div>
 
-            <div className="max-w-4xl mx-auto space-y-6">
-              {backupFeatures.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: index * 0.15 }}
-                    className="flex flex-col sm:flex-row items-start gap-4 p-5 bg-white rounded-2xl border border-[#cfcfcf] shadow-sm"
-                  >
-                    <div className="w-14 h-14 rounded-xl bg-[#a6dbeb]/40 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-7 h-7 text-[#2b8ac4]" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg text-[#0B294b] mb-2">{feature.title}</h3>
-                      <p className="text-sm text-[#617b5d] leading-relaxed">{feature.description}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              <div className="space-y-6">
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-2xl flex items-center gap-3">
+                      <HardDrive className="h-6 w-6 text-emerald-600" />
+                      Off-Grid Local Storage Backups
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-700 leading-relaxed mb-4">
+                      In addition to cloud-based backups, we maintain encrypted backups on local storage systems 
+                      that are completely off the grid. These air-gapped backups provide an additional layer of 
+                      protection against network-based threats and ensure data recovery capabilities even in the 
+                      event of widespread infrastructure issues.
+                    </p>
+                    <p className="text-slate-700 leading-relaxed">
+                      These off-grid backups are stored in physically secure locations with restricted access, 
+                      ensuring that your data remains protected from both digital and physical threats.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-2xl flex items-center gap-3">
+                      <RefreshCw className="h-6 w-6 text-emerald-600" />
+                      Weekly Automated Backup Schedule
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-700 leading-relaxed mb-4">
+                      We perform comprehensive database backups every week to ensure good rollback capabilities 
+                      in case of emergencies. These automated backups capture the complete state of your data, 
+                      including all tables, relationships, and configurations.
+                    </p>
+                    <p className="text-slate-700 leading-relaxed">
+                      Our backup retention policy maintains multiple restore points, allowing us to roll back to 
+                      any point in time within the retention window. This ensures that even if data corruption or 
+                      accidental deletion occurs, we can quickly restore your workspace to a previous state with 
+                      minimal data loss.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Privacy Commitment - Full width banner */}
-          <div className="relative z-10 py-12">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mx-4 sm:mx-6 lg:mx-8"
-            >
-              <div className="max-w-4xl mx-auto bg-gradient-to-r from-[#0B294b] via-[#1a4a6e] to-[#2b8ac4] rounded-2xl p-6 sm:p-10 text-white overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Shield className="w-8 h-8" />
-                    <h3 className="font-serif text-xl sm:text-2xl font-bold">Our Privacy Commitment</h3>
-                  </div>
-                  <p className="text-white/90 text-lg font-medium mb-3">
-                    We do not sell your information. Period.
+        {/* Privacy Commitment Section */}
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-0">
+                <CardHeader>
+                  <CardTitle className="text-3xl mb-2 flex items-center gap-3">
+                    <Shield className="h-8 w-8" />
+                    Our Privacy Commitment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-200 leading-relaxed mb-4 text-lg">
+                    We do not have any interest in selling your information. Period.
                   </p>
-                  <p className="text-white/80 text-sm leading-relaxed">
-                    Your data belongs to you. We treat it with the same respect and protection we expect for our own. 
-                    This isn't just a policy—it's a fundamental principle.
+                  <p className="text-slate-200 leading-relaxed mb-4">
+                    We understand the importance of data privacy because we value our own privacy. We don&apos;t like 
+                    our information leaked, and we would never expect anything less from our customers. Your data 
+                    belongs to you, and we treat it with the same respect and protection we expect for our own.
                   </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Additional Measures - Horizontal scroll on mobile, grid on desktop */}
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 pb-16 relative z-10">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="font-serif text-2xl sm:text-3xl font-bold text-[#0B294b] text-center mb-8"
-            >
-              Additional Security Measures
-            </motion.h2>
-
-            {/* Mobile: Horizontal scroll */}
-            <div className="md:hidden">
-              <div 
-                ref={measuresScrollRef}
-                onScroll={handleMeasuresScroll}
-                className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4"
-              >
-                {additionalMeasures.map((measure, index) => (
-                  <div
-                    key={index}
-                    className="flex-shrink-0 w-[70vw] snap-center bg-white rounded-xl border border-[#cfcfcf] p-4"
-                  >
-                    <h4 className="font-semibold text-sm text-[#0B294b] mb-2">{measure.title}</h4>
-                    <p className="text-xs text-[#617b5d] leading-relaxed">{measure.desc}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-center gap-2 mt-2">
-                {additionalMeasures.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                      activeMobileMeasure === i ? 'bg-[#2b8ac4]' : 'bg-[#cfcfcf]'
-                    }`} 
-                  />
-                ))}
-              </div>
+                  <p className="text-slate-200 leading-relaxed">
+                    Your information is used solely to provide you with the services you&apos;ve requested. We don&apos;t 
+                    share, sell, or monetize your data in any way. This isn&apos;t just a policy—it&apos;s a fundamental 
+                    principle that guides everything we do.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
+          </div>
+        </section>
 
-            {/* Desktop: 2x2 grid with stagger */}
-            <div className="hidden md:grid grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {additionalMeasures.map((measure, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20, x: index % 2 === 0 ? -20 : 20 }}
-                  whileInView={{ opacity: 1, y: 0, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white rounded-xl border border-[#cfcfcf] p-5 hover:border-[#a6dbeb] hover:shadow-md transition-all"
-                >
-                  <h4 className="font-semibold text-[#0B294b] mb-2">{measure.title}</h4>
-                  <p className="text-sm text-[#617b5d] leading-relaxed">{measure.desc}</p>
-                </motion.div>
-              ))}
+        {/* Additional Security Features */}
+        <section className="py-16 bg-slate-50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                  Additional Security Measures
+                </h2>
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                  Beyond encryption and backups, we implement additional security layers to protect your data.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle>Role-Based Access Control (RBAC)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      Fine-grained permission systems ensure that users only have access to the features and data 
+                      they need. Permissions are enforced at both the application and database levels, providing 
+                      defense in depth.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle>Secure Authentication</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      We support secure authentication protocols including OAuth 2.0, JWT tokens with short expiration 
+                      times, and optional multi-factor authentication. All authentication flows use encrypted channels 
+                      and follow industry best practices.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle>Connection Pooling & Rate Limiting</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      Advanced connection pooling manages database connections efficiently while preventing resource 
+                      exhaustion. Rate limiting protects against brute force attacks and ensures fair resource 
+                      allocation across all users.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle>Regular Security Audits</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-600">
+                      Our security policies and infrastructure undergo regular reviews and audits. We continuously 
+                      monitor for vulnerabilities and apply security patches promptly. Our RLS policies are manually 
+                      reviewed and tested to ensure they remain effective as the platform evolves.
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </section>
@@ -414,3 +282,4 @@ export default function SecurityPage() {
     </div>
   );
 }
+

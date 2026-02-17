@@ -95,8 +95,6 @@ export const useClientAssignments = (clientId: string | undefined) => {
     }
 
     try {
-      // Use updateClientAssignments to replace any existing assignment with the new one
-      // This ensures only one staff member is assigned (single assignment constraint)
       await updateClientAssignments(workspaceId, clientId, [selectedMemberId], user.id);
       toast.success('Staff member assigned successfully');
       setSelectedMemberId('');
@@ -111,8 +109,6 @@ export const useClientAssignments = (clientId: string | undefined) => {
     if (!workspaceId || !clientId || !user) return;
 
     try {
-      // If memberId is empty, remove all assignments
-      // Otherwise, update to the selected member (replacing any existing)
       const memberIds = memberId ? [memberId] : [];
       await updateClientAssignments(workspaceId, clientId, memberIds, user.id);
       if (memberId) {
@@ -131,7 +127,7 @@ export const useClientAssignments = (clientId: string | undefined) => {
     if (!user) return;
 
     try {
-      await deleteClientAssignment(assignmentId, workspaceId, user.id);
+      await deleteClientAssignment(assignmentId, user.id);
       toast.success('Staff member removed successfully');
       await fetchAssignedStaff();
     } catch (error) {
@@ -153,7 +149,6 @@ export const useClientAssignments = (clientId: string | undefined) => {
     member => !assignedStaff.some(s => s.workspaceMemberId === member.id)
   );
 
-  // Get currently assigned staff member ID (should be only one due to constraint)
   const currentStaffMemberId = assignedStaff.length > 0 ? assignedStaff[0].workspaceMemberId : '';
 
   return {

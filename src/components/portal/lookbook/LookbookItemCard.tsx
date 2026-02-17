@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart } from 'lucide-react';
+import { Heart, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LookbookItem } from '@/types/lookbook';
 
@@ -22,25 +22,13 @@ export function LookbookItemCard({
   onToggleLike,
   onViewDetails,
 }: LookbookItemCardProps) {
-  const handleCardClick = () => {
-    onViewDetails(item);
-  };
-
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleLike(item);
-  };
-
   return (
     <motion.div
       key={item.id ?? `${item.title}-${item.brand}-${item.category}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <Card 
-        className="relative group overflow-hidden rounded-2xl cursor-pointer hover:shadow-lg transition-shadow"
-        onClick={handleCardClick}
-      >
+      <Card className="relative group overflow-hidden rounded-2xl">
         <img
           src={item.image}
           alt={item.title}
@@ -51,11 +39,16 @@ export function LookbookItemCard({
           }}
         />
         <CardContent className="p-4">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <h3 className="text-base font-semibold flex-1">
-              {item.title ? `${item.brand} - ${item.title}` : item.brand}
-            </h3>
-            <Badge variant="secondary" className="capitalize flex-shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              {item.brand}
+            </a>
+            <Badge variant="secondary" className="capitalize">
               {item.category}
             </Badge>
           </div>
@@ -64,10 +57,17 @@ export function LookbookItemCard({
           <p className="text-sm mt-2 text-muted-foreground line-clamp-3">{item.description}</p>
         </CardContent>
         <div className="absolute top-2 right-2 flex gap-1">
+          <button
+            aria-label="View details"
+            onClick={() => onViewDetails(item)}
+            className="rounded-full p-1 bg-background/80 hover:bg-background shadow-sm"
+          >
+            <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+          </button>
           {!readOnly && (
             <button
               aria-label={isLiked ? 'Unlike' : 'Like'}
-              onClick={handleLikeClick}
+              onClick={() => onToggleLike(item)}
               className="rounded-full p-1 bg-background/80 hover:bg-background shadow-sm"
             >
               <Heart

@@ -3,9 +3,6 @@ import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -119,12 +116,7 @@ function SortableLookbookCategory({ category, onUpdate, onDelete, canEdit }: Sor
   );
 }
 
-interface LookbookCategoriesSectionProps {
-  isCollapsible?: boolean;
-  isOpen?: boolean;
-}
-
-export function LookbookCategoriesSection({ isCollapsible = false, isOpen = true }: LookbookCategoriesSectionProps = {}) {
+export function LookbookCategoriesSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -273,8 +265,16 @@ export function LookbookCategoriesSection({ isCollapsible = false, isOpen = true
     }
   };
 
-  const cardContent = (
-    <CardContent className="space-y-4">
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Lookbook Categories</CardTitle>
+        <CardDescription>
+          Manage the categories available for lookbook items in your workspace. 
+          "Other" is a required category and cannot be deleted or renamed.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <Can permission="tab.admin_workspacesetup.edit">
           <div className="flex gap-2">
             <Input
@@ -325,7 +325,7 @@ export function LookbookCategoriesSection({ isCollapsible = false, isOpen = true
             </div>
           )}
         </div>
-      {/* </CardContent> */}
+      </CardContent>
 
       <ConfirmDeleteDialog
         open={deleteDialogOpen}
@@ -338,43 +338,6 @@ export function LookbookCategoriesSection({ isCollapsible = false, isOpen = true
             : ''
         }
       />
-    </CardContent>
-  );
-
-  if (isCollapsible) {
-    return (
-      <Card>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle>Lookbook Categories</CardTitle>
-                <CardDescription>
-                  Manage the categories available for lookbook items in your workspace. 
-                  "Other" is a required category and cannot be deleted or renamed.
-                </CardDescription>
-              </div>
-              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "transform rotate-180")} />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {cardContent}
-        </CollapsibleContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Lookbook Categories</CardTitle>
-        <CardDescription>
-          Manage the categories available for lookbook items in your workspace. 
-          "Other" is a required category and cannot be deleted or renamed.
-        </CardDescription>
-      </CardHeader>
-      {cardContent}
     </Card>
   );
 }

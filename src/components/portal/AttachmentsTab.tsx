@@ -8,8 +8,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAttachmentFolders } from '@/hooks/useAttachmentFolders';
 import { useAttachmentFolderPermissions } from '@/hooks/useAttachmentFolderPermissions';
-import { logInsert, logDelete } from '@/lib/auditLog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { isDemoMode, blockDemoWrite } from '@/utils/demoMode';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +46,15 @@ export function AttachmentsTab({ projectId, readOnly = false }: AttachmentsTabPr
 
   // Fetch folder files when a folder is expanded
   const fetchFolderFiles = async (folderSlug: string) => {
+    if (isDemoMode()) {
+      // In demo mode, folders are empty (no files)
+      setFolderFiles(prev => ({
+        ...prev,
+        [folderSlug]: []
+      }));
+      return;
+    }
+
     if (!workspaceId) {
       console.error('Workspace ID not available');
       return;
@@ -109,24 +124,6 @@ export function AttachmentsTab({ projectId, readOnly = false }: AttachmentsTabPr
       });
 
       const uploadedFiles = await Promise.all(uploadPromises);
-      
-      // Log audit events for each uploaded file
-      if (workspaceId && user && uploadedFiles.length > 0) {
-        await Promise.all(
-          uploadedFiles.map((fileName) => {
-            const filePath = `${workspaceId}/${projectId}/${folderSlug}/${fileName}`;
-            return logInsert(
-              workspaceId,
-              user.id,
-              'project_documents',
-              filePath, // Use file path as resource ID
-              { file_path: filePath, project_id: projectId, folder_slug: folderSlug },
-              'Attachments'
-            );
-          })
-        );
-      }
-      
       toast.success(`Uploaded ${uploadedFiles.length} file(s)`);
       
       // Refresh the folder files
@@ -142,6 +139,10 @@ export function AttachmentsTab({ projectId, readOnly = false }: AttachmentsTabPr
   };
 
   const handleFileDownload = async (folderSlug: string, fileName: string) => {
+    if (blockDemoWrite('download file')) {
+      return;
+    }
+
     if (!workspaceId) {
       toast.error('Workspace not available');
       return;
@@ -176,6 +177,11 @@ export function AttachmentsTab({ projectId, readOnly = false }: AttachmentsTabPr
   const handleFileDelete = async () => {
     if (!fileToDelete) return;
 
+    if (blockDemoWrite('delete file')) {
+      setFileToDelete(null);
+      return;
+    }
+
     if (!workspaceId) {
       toast.error('Workspace not available');
       return;
@@ -192,32 +198,11 @@ export function AttachmentsTab({ projectId, readOnly = false }: AttachmentsTabPr
     try {
       const filePath = `${workspaceId}/${projectId}/${fileToDelete.folder}/${fileToDelete.fileName}`;
       
-      // Fetch before data for audit log (check if there's a database record)
-      const { data: beforeData } = await supabase
-        .from('project_documents')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('file_path', filePath)
-        .maybeSingle();
-      
       const { error } = await supabase.storage
         .from('project-attachments')
         .remove([filePath]);
 
       if (error) throw error;
-
-      // Log audit event for file deletion
-      if (workspaceId && user) {
-        const auditData = beforeData || { file_path: filePath, project_id: projectId, folder_slug: fileToDelete.folder };
-        await logDelete(
-          workspaceId,
-          user.id,
-          'project_documents',
-          filePath, // Use file path as resource ID
-          auditData,
-          'Attachments'
-        );
-      }
 
       toast.success(`Deleted ${fileToDelete.fileName}`);
       
@@ -293,25 +278,36 @@ export function AttachmentsTab({ projectId, readOnly = false }: AttachmentsTabPr
                     </CollapsibleTrigger>
                     
                     {!isReadOnly && (
-                      <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(e) => handleFileUpload(folder.slug, folder.id, e)}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          disabled={uploadingFolder === folder.slug}
-                          id={`upload-${folder.slug}`}
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={uploadingFolder === folder.slug}
-                          className="pointer-events-none"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          {uploadingFolder === folder.slug ? 'Uploading...' : 'Upload'}
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="relative" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="file"
+                                multiple
+                                onChange={(e) => handleFileUpload(folder.slug, folder.id, e)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                disabled={uploadingFolder === folder.slug || isDemoMode()}
+                                id={`upload-${folder.slug}`}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={uploadingFolder === folder.slug || isDemoMode()}
+                                className="pointer-events-none"
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {uploadingFolder === folder.slug ? 'Uploading...' : 'Upload'}
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          {isDemoMode() && (
+                            <TooltipContent>
+                              <p>File uploads are disabled in demo mode</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
 

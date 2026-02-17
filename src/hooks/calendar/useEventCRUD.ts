@@ -4,6 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { EventItem } from '@/types';
 import { EventFormData, DatabaseClient, ClientProject, EventItemWithAccountability } from '@/types/calendar';
 import { logInsert, logUpdate, logDelete } from '@/lib/auditLog';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface UseEventCRUDProps {
   workspaceId: string | undefined;
@@ -33,6 +34,15 @@ export function useEventCRUD({
     projects: ClientProject[],
     attendeeMemberIds: string[] = []
   ) => {
+    if (isDemoMode()) {
+      toast({
+        title: 'Demo mode',
+        description: 'Creating events is disabled in demo mode.',
+        variant: 'default',
+      });
+      return { success: false };
+    }
+
     const missingFields: string[] = [];
 
     // Required fields: title, date, time
@@ -84,7 +94,6 @@ export function useEventCRUD({
             name: formData.projectName || 'New Project',
             address: formData.address,
             project_type: formData.projectType,
-            // REMOVED: notes field
             created_by: currentUserId,
             status: 'Estimate',
             workspace_id: workspaceId,
@@ -99,23 +108,6 @@ export function useEventCRUD({
         projectId = newProject.project_id;
         projectData = newProject;
 
-        // Copy default questions to project
-        try {
-          const { error: copyError } = await (supabase as any)
-            .rpc('copy_default_questions_to_project', {
-              p_workspace_id: workspaceId,
-              p_project_id: newProject.project_id,
-              p_created_by: currentUserId,
-            });
-          if (copyError) {
-            console.error('Error copying default questions to project:', copyError);
-            // Don't fail the whole operation if this fails
-          }
-        } catch (error) {
-          console.error('Error copying default questions to project:', error);
-          // Don't fail the whole operation if this fails
-        }
-
         // Set this new project as active for the client
         const { error: clientUpdateError } = await supabase
           .from('clients')
@@ -127,11 +119,6 @@ export function useEventCRUD({
 
         if (clientUpdateError) {
           console.error('Error updating client active project:', clientUpdateError);
-        }
-
-        // Log audit event for project creation
-        if (workspaceId && currentUserId && newProject) {
-          await logInsert(workspaceId, currentUserId, 'projects', newProject.project_id, newProject, 'Projects');
         }
 
         toast({
@@ -157,18 +144,17 @@ export function useEventCRUD({
       const { data, error } = await supabase
         .from('calendar_events')
         .insert({
-          title: formData.title, // NEW: Required title field
-          client_id: formData.clientId || null, // Now optional
-          client_name: client?.name || formData.clientName || null,
-          project_id: projectId && projectId !== 'new' ? projectId : null, // NEW: FK to projects
+          title: formData.title,
+          client_id: formData.clientId || null,
+          client_name: client?.name || formData.clientName || '',
+          project_id: projectId && projectId !== 'new' ? projectId : null,
           project_type: projectData?.project_type || formData.projectType || null,
-          appointment_type_id: formData.appointmentTypeId || null, // Now optional
+          appointment_type_id: formData.appointmentTypeId || null,
           address: projectData?.address || formData.address || null,
           event_date: formData.date,
           event_time: formData.time,
           created_by: currentUserId,
           workspace_id: workspaceId,
-          // REMOVED: phone, email, notes, assigned_to
         })
         .select()
         .single();
@@ -193,9 +179,8 @@ export function useEventCRUD({
 
       const finalAttendeeIds = [...attendeeMemberIds];
       
-      // Auto-add creator if not already in the list (optional now, but good practice)
-      if (currentUserMember && !finalAttendeeIds.includes(currentUserMember.id) && attendeeMemberIds.length === 0) {
-        // Only auto-add if no attendees were explicitly selected
+      // Auto-add creator if not already in the list
+      if (currentUserMember && !finalAttendeeIds.includes(currentUserMember.id)) {
         finalAttendeeIds.push(currentUserMember.id);
       }
 
@@ -277,31 +262,38 @@ export function useEventCRUD({
 
       const ev: EventItemWithAccountability = {
         id: data.id,
-        title: formData.title!, // NEW: Title field
+        title: formData.title!,
         clientId: formData.clientId,
         clientName: client?.name || formData.clientName,
-        projectId: projectId && projectId !== 'new' ? projectId : undefined, // NEW: project_id
+        projectId: projectId && projectId !== 'new' ? projectId : undefined,
         projectType: projectData?.project_type || formData.projectType,
         appointmentTypeId: formData.appointmentTypeId,
         address: projectData?.address || formData.address,
-        assignedTo: attendeeUserIds.length > 0 ? attendeeUserIds : [],
+        assignedTo: attendeeUserIds.length > 0 ? attendeeUserIds : (currentUserId ? [currentUserId] : []),
         date: formData.date!,
         time: formData.time!,
         created_by: currentUserId,
         created_at: data.created_at,
         updated_by: data.updated_by || null,
         updated_at: data.updated_at,
-        attendees: attendeesWithDetails, // Include full attendee details
-        // REMOVED: notes, phone, email
+        attendees: attendeesWithDetails,
       };
 
       addEvent(ev);
 
-      // Activity log - only log if client is present
       if (ev.clientId) {
+        // Fetch appointment type name for activity log
+        const { data: appointmentTypeData } = await supabase
+          .from('calendar_appointment_types')
+          .select('name')
+          .eq('id', ev.appointmentTypeId)
+          .maybeSingle();
+        
+        const appointmentTypeName = appointmentTypeData?.name || 'Event';
+        
         onLogActivity(
           ev.clientId,
-          `Event: ${ev.title} — ${ev.date} ${ev.time}`
+          `Event: ${ev.date} ${ev.time} — ${ev.projectType || 'Event'} (${appointmentTypeName})`
         );
       }
 
@@ -335,7 +327,6 @@ export function useEventCRUD({
   ) => {
     const missingFields: string[] = [];
 
-    // Required fields: title, date, time
     if (!formData.title) missingFields.push('Title');
     if (!formData.date) missingFields.push('Date');
     if (!formData.time) missingFields.push('Time');
@@ -363,17 +354,16 @@ export function useEventCRUD({
       const { data: afterData, error } = await supabase
         .from('calendar_events')
         .update({
-          title: formData.title, // NEW: Title field
-          client_id: formData.clientId || null, // Now optional
-          client_name: client?.name || formData.clientName || null,
-          project_id: formData.projectId || null, // NEW: project_id
+          title: formData.title,
+          client_id: formData.clientId || null,
+          client_name: client?.name || formData.clientName || '',
+          project_id: formData.projectId || null,
           project_type: formData.projectType || null,
-          appointment_type_id: formData.appointmentTypeId || null, // Now optional
+          appointment_type_id: formData.appointmentTypeId || null,
           address: formData.address || null,
           event_date: formData.date,
           event_time: formData.time,
           updated_by: currentUserId || null,
-          // REMOVED: phone, email, notes
         })
         .eq('id', eventId)
         .select()
@@ -486,22 +476,21 @@ export function useEventCRUD({
 
       const updatedEvent: EventItemWithAccountability = {
         id: eventId,
-        title: formData.title!, // NEW: Title field
+        title: formData.title!,
         clientId: formData.clientId,
         clientName: client?.name || formData.clientName,
         projectId: formData.projectId,
         projectType: formData.projectType,
         appointmentTypeId: formData.appointmentTypeId,
         address: formData.address,
-        assignedTo: attendeeUserIds.length > 0 ? attendeeUserIds : [],
+        assignedTo: attendeeUserIds.length > 0 ? attendeeUserIds : (currentUserId ? [currentUserId] : []),
         date: formData.date!,
         time: formData.time!,
         created_by: eventData?.created_by,
         created_at: eventData?.created_at,
         updated_by: eventData?.updated_by || null,
         updated_at: eventData?.updated_at,
-        attendees: attendeesWithDetails, // Include full attendee details
-        // REMOVED: notes, phone, email
+        attendees: attendeesWithDetails,
       };
 
       removeEvent(eventId);
@@ -578,3 +567,4 @@ export function useEventCRUD({
     isCreatingProject,
   };
 }
+

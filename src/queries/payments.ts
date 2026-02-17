@@ -1,10 +1,29 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logInsert, logUpdate, logDelete } from '@/lib/auditLog';
+import { isDemoMode, blockDemoWrite } from '@/utils/demoMode';
+import { getMockPayments } from '@/utils/mockData';
 
 /**
  * Fetch payments for a project
  */
 export const fetchProjectPayments = async (projectId: string, workspaceId: string, limit = 100, offset = 0) => {
+  if (isDemoMode()) {
+    const mockPayments = getMockPayments();
+    return mockPayments
+      .filter(p => p.project_id === projectId)
+      .slice(offset, offset + limit)
+      .map((payment: any) => ({
+        id: payment.payment_id,
+        date: payment.date,
+        amount: payment.amount,
+        type: payment.type,
+        received_by: payment.received_by || '',
+        for_field: payment.for_field || '',
+        note: payment.note || ''
+      }));
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from('payments')
     .select('*')
@@ -42,6 +61,10 @@ export const createPayment = async (
   },
   userId?: string
 ) => {
+  if (blockDemoWrite('create payment')) {
+    throw new Error('Demo mode is read-only');
+  }
+
   const { data, error } = await (supabase as any)
     .from('payments')
     .insert({

@@ -9,8 +9,6 @@ import { PaymentSplitter } from "./PaymentSplitter";
 import { usePrice } from "@/contexts/PriceContext";
 import { LinkDialog } from "./materials/LinkDialog";
 import { useLocalStorageCache, useCacheKey } from "@/hooks/useLocalStorageCache";
-import { ensureNumber } from "@/utils/materialsUtils";
-import { toast } from "sonner";
 
 const money = (n: number) => n.toLocaleString(undefined, { style: "currency", currency: "USD" });
 const uid = () => Math.random().toString(36).slice(2);
@@ -32,7 +30,6 @@ interface ChangeOrder {
   title: string;
   itemsA: Item[];
   itemsB: Item[];
-  soldContractTotal?: number;
 }
 
 interface ChangeOrderSectionProps {
@@ -79,29 +76,26 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
   
   // Ref to store the local values getter from DropSection
   const localValuesGetterRef = React.useRef<(() => Record<string, Partial<Item>>) | null>(null);
-  // Local overrides from Revised section inputs so we can compute difference in real time
-  const [localOverrides, setLocalOverrides] = React.useState<Record<string, Partial<Item>>>({});
 
-  // Load saved revisions from DB, or default Revised = mirror of "In Contract" (linked, like drag-and-drop)
+  // Load saved revisions or clone from contract items (but respect cached state if it exists)
   useEffect(() => {
-    if (loading) return; // Wait for revisions fetch to complete
-
-    setLocalOverrides({}); // Reset so difference uses itemsB until DropSection reports
-    if (revisions.length > 0) {
-      // DB has saved revisions — use them (server wins over cache)
+    // Only update if we don't have cached items already
+    // This prevents overwriting cached edits when data refetches
+    if (revisions.length > 0 && itemsB.length === 0) {
+      // Load from database only if no cached items
       setItemsB(revisions);
-    } else if (changeOrder.itemsA.length > 0) {
-      // No saved revisions: default Revised = exact mirror of "In Contract", each item linked
-      const mirrored = changeOrder.itemsA.map((it) => ({
-        ...it,
-        linkedTo: it.id,
-        linkedName: it.name,
-        id: uid(),
-        unmodified: true,
+    } else if (itemsB.length === 0 && changeOrder.itemsA.length > 0) {
+      // Clone from contract items if no saved revisions and no cached items
+      const cloned = changeOrder.itemsA.map((it) => ({ 
+        ...it, 
+        linkedTo: it.id, 
+        linkedName: it.name, 
+        id: uid(), 
+        unmodified: true 
       }));
-      setItemsB(mirrored);
+      setItemsB(cloned);
     }
-  }, [changeOrder.id, changeOrder.itemsA.length, loading, revisions.length]);
+  }, [changeOrder.itemsA.length, revisions.length]); // Only check lengths to avoid overwriting cached edits
 
   const handleDrop = (item: Item) => {
     const newItem: Item = { 
@@ -116,11 +110,13 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
 
   const handleSave = useCallback(async () => {
     if (!isPaymentValid) {
+      // Import toast if not already imported
+      const { toast } = await import("sonner");
       toast.error("Payment split must total 100% before saving");
       return;
     }
     
-    // Merge local values into itemsB before saving (coerce blank qty/price to 0 so nothing is left blank)
+    // Merge local values into itemsB before saving
     let itemsToSave = itemsB;
     if (localValuesGetterRef.current) {
       const localValues = localValuesGetterRef.current();
@@ -130,8 +126,6 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
           return {
             ...it,
             ...local,
-            qty: ensureNumber(local.qty, it.qty),
-            price: ensureNumber(local.price, it.price),
             unmodified: false,
           };
         }
@@ -141,12 +135,10 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
     
     const success = await saveRevisions(itemsToSave);
     if (success) {
-      setItemsB(itemsToSave);
-      toast.success("Revised materials saved successfully");
-    } else {
-      toast.error("Failed to save revised materials");
+      // Clear cache after successful save
+      clearItemsBCache();
     }
-  }, [itemsB, isPaymentValid, saveRevisions]);
+  }, [itemsB, isPaymentValid, saveRevisions, clearItemsBCache]);
   
   // Handler for link dialog save
   const handleLinkSave = () => {
@@ -175,17 +167,8 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
   }, [handleSave, onSaveRef]);
 
   const totalA = changeOrder.itemsA.reduce((s, it) => s + it.qty * it.price, 0);
-  const totalB = React.useMemo(
-    () =>
-      itemsB.reduce((s, it) => {
-        const qty = ensureNumber(localOverrides[it.id]?.qty, it.qty);
-        const price = ensureNumber(localOverrides[it.id]?.price, it.price);
-        return s + qty * price;
-      }, 0),
-    [itemsB, localOverrides]
-  );
-  const difference = totalB - totalA; // Revision − CO total
-  const soldContractTotal = changeOrder.soldContractTotal ?? 0;
+  const totalB = itemsB.reduce((s, it) => s + it.qty * it.price, 0);
+  const difference = totalA - totalB;
 
   return (
     <>
@@ -194,36 +177,6 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
           <CardTitle className="text-base font-medium">{changeOrder.title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Three summary cards: Original Sold Contract, In Contract (CO total), Revised total */}
-          {!hidden && (showInContractPrices || showRevisedPrices) && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Card className="border rounded-lg shadow-sm">
-                <CardHeader className="py-2 px-3">
-                  <CardTitle className="text-xs font-medium">Original Sold Contract</CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3 pt-0">
-                  <div className="text-base font-semibold">{money(soldContractTotal)}</div>
-                </CardContent>
-              </Card>
-              <Card className="border rounded-lg shadow-sm">
-                <CardHeader className="py-2 px-3">
-                  <CardTitle className="text-xs font-medium">In Contract (CO Total)</CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3 pt-0">
-                  <div className="text-base font-semibold">{money(totalA)}</div>
-                </CardContent>
-              </Card>
-              <Card className="border rounded-lg shadow-sm">
-                <CardHeader className="py-2 px-3">
-                  <CardTitle className="text-xs font-medium">Revised Total</CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3 pt-0">
-                  <div className="text-base font-semibold">{money(totalB)}</div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
           <h4 className="text-xs font-semibold">In Contract</h4>
           {changeOrder.itemsA.map((it) => (
             <DraggableItem
@@ -258,14 +211,13 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
             onGetLocalValues={(getter) => {
               localValuesGetterRef.current = getter;
             }}
-            onLocalValuesChange={setLocalOverrides}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {!hidden && showRevisedPrices && (
               <div className="flex justify-between border-t pt-2 text-xs items-center">
                 <span>Difference</span>
-                <span className={`${difference > 0 ? 'text-red-600' : 'text-green-600'} font-semibold`}>
+                <span className={`${difference > 0 ? 'text-green-600' : 'text-red-600'} font-semibold`}>
                   {money(difference)}
                 </span>
               </div>
@@ -277,7 +229,6 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
                 onValidationChange={setIsPaymentValid}
               />
             )}
-          </div>
 
           {!readOnly && canViewSaveButton && (
             <div className="border-t border-border/60 pt-3 mt-3 flex justify-end">
@@ -292,6 +243,7 @@ export function ChangeOrderSection({ changeOrder, hoveredLink, setHoveredLink, s
               </Button>
             </div>
           )}
+        </div>
         </CardContent>
       </Card>
       
@@ -331,20 +283,15 @@ function DraggableItem({ item, linked, hoveredLink, setHoveredLink, readOnly = f
       onMouseEnter={() => setHoveredLink(item.id)}
       onMouseLeave={() => setHoveredLink(null)}
       className={`flex justify-between items-center px-3 py-1.5 border rounded-lg transition-all duration-150 cursor-pointer hover:bg-accent/50 ${
-        isDragging ? 'opacity-50 bg-card border-border' : linked ? 'border-success/40 bg-success/10' : 'border-border bg-card'
+        isDragging ? 'opacity-50' : linked ? 'border-green-400 bg-green-50' : 'border-border'
       } ${isHighlighted ? 'ring-1 ring-primary/40' : ''}`}
     >
       <div className="flex flex-col text-xs">
         <span className="font-medium flex items-center gap-1">
           {item.name}
           {item.link && (
-            <a
-              href={item.link.startsWith('http://') || item.link.startsWith('https://') ? item.link : `https://${item.link}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <LinkIcon className="h-3 w-3 text-primary" />
+            <a href={item.link} target="_blank" rel="noreferrer">
+              <LinkIcon className="h-3 w-3 text-blue-500" />
             </a>
           )}
           {item.unmodified && (
@@ -376,10 +323,9 @@ interface DropSectionProps {
   showPrice?: boolean;
   onOpenLinkDialog?: (itemId: string, currentLink?: string) => void;
   onGetLocalValues?: (getter: () => Record<string, Partial<Item>>) => void;
-  onLocalValuesChange?: (values: Record<string, Partial<Item>>) => void;
 }
 
-function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLink, onSave, hideSaveButton = false, hidden = false, readOnly = false, showPrice = false, onOpenLinkDialog, onGetLocalValues, onLocalValuesChange }: DropSectionProps) {
+function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLink, onSave, hideSaveButton = false, hidden = false, readOnly = false, showPrice = false, onOpenLinkDialog, onGetLocalValues }: DropSectionProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'ITEM',
     drop: (item: Item) => !readOnly && onDrop(item),
@@ -419,11 +365,6 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
       onGetLocalValues(() => localValues);
     }
   }, [onGetLocalValues]); // Only when callback changes, not on every localValues change
-
-  // Notify parent of local value changes so difference can update in real time
-  useEffect(() => {
-    onLocalValuesChange?.(localValues);
-  }, [localValues, onLocalValuesChange]);
 
   // Function to update local value (doesn't update items)
   const updateLocalValue = useCallback((id: string, field: keyof Item, value: any) => {
@@ -605,8 +546,8 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
                       </div>
                     )}
                     {/* Mobile: Qty, Price, Total with labels */}
-                    <div className="flex items-end gap-2 md:hidden mt-1">
-                      <div className="flex flex-col gap-0.5">
+                    <div className="flex items-end gap-3 md:hidden mt-1">
+                      <div className="flex flex-col gap-0.5 min-w-[3.5rem]">
                         <span className="text-[10px] text-muted-foreground">Qty</span>
                         <Input 
                           type="number" 
@@ -626,7 +567,7 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
                       </div>
                       {!hidden && showPrice && (
                         <>
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-0.5 min-w-[4.5rem]">
                             <span className="text-[10px] text-muted-foreground">Price</span>
                             <Input 
                               type="number" 
@@ -644,7 +585,7 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
                               disabled={readOnly}
                             />
                           </div>
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-0.5 min-w-[4rem]">
                             <span className="text-[10px] text-muted-foreground">Total</span>
                             <span className="text-xs font-medium h-6 flex items-center">{money(it.qty * it.price)}</span>
                           </div>
@@ -671,8 +612,8 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
                     )}
                   </div>
                   {/* Desktop: Qty, Price, Total with labels */}
-                  <div className="hidden md:flex items-end gap-2">
-                    <div className="flex flex-col gap-0.5">
+                  <div className="hidden md:flex items-end gap-3 shrink-0">
+                    <div className="flex flex-col gap-0.5 min-w-[3.5rem]">
                       <span className="text-[10px] text-muted-foreground">Qty</span>
                       <Input 
                         type="number" 
@@ -692,7 +633,7 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
                     </div>
                     {!hidden && showPrice && (
                       <>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-0.5 min-w-[4.5rem]">
                           <span className="text-[10px] text-muted-foreground">Price</span>
                           <Input 
                             type="number" 
@@ -710,7 +651,7 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
                             disabled={readOnly}
                           />
                         </div>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-0.5 min-w-[4rem]">
                           <span className="text-[10px] text-muted-foreground">Total</span>
                           <span className="text-xs font-medium h-6 flex items-center">{money(it.qty * it.price)}</span>
                         </div>
@@ -721,9 +662,9 @@ function DropSection({ title, onDrop, items, setItems, hoveredLink, setHoveredLi
               );
             })}
             {!hidden && showPrice && group.length > 1 && (
-              <div className="flex justify-between text-[10px] text-muted-foreground border-t pt-1 mt-1">
+              <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-1">
                 <span>Merged Total for {base}</span>
-                <span>
+                <span className="font-medium">
                   {money(group.reduce((s, i) => s + i.qty * i.price, 0))} ({group.reduce((s, i) => s + i.qty, 0)} qty)
                 </span>
               </div>
@@ -743,7 +684,7 @@ interface FooterProps {
 
 function Footer({ label, amount }: FooterProps) {
   return (
-    <div className="flex justify-between border-t pt-1 mt-1 text-[10px]">
+    <div className="flex justify-between items-center border-t pt-2 mt-1 text-[10px]">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{amount}</span>
     </div>

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { logInsert, logUpdate, logDelete } from '@/lib/auditLog';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockClientAssignments, DEMO_WORKSPACE_MEMBER_ID } from '@/utils/mockData';
 
 /**
  * Get workspace_member_id from user_id and workspace_id
@@ -20,7 +21,32 @@ export const getWorkspaceMemberId = async (userId: string, workspaceId: string):
  * Fetch all client assignments for a specific client with user details
  */
 export const fetchClientAssignments = async (clientId: string, workspaceId: string) => {
+  if (isDemoMode()) {
+    const mockAssignments = getMockClientAssignments();
+    const assignments = mockAssignments.filter(a => a.client_id === clientId);
+    
+    if (assignments.length === 0) return [];
+    
+    // Return with user details (demo user)
+    return assignments.map(a => ({
+      id: a.id,
+      workspace_id: a.workspace_id,
+      client_id: a.client_id,
+      workspace_member_id: a.workspace_member_id,
+      created_by: a.created_by,
+      created_at: a.created_at,
+      updated_by: a.updated_by,
+      updated_at: a.updated_at,
+      user: {
+        user_id: '00000000-0000-0000-0000-000000000001',
+        name: 'Demo User',
+        email: 'demo@masterviewportals.com',
+      },
+    }));
+  }
+
   // First, fetch client assignments with workspace_member_id
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data: assignments, error: assignmentsError } = await (supabase as any)
     .from("client_assignments")
     .select(`
@@ -132,12 +158,6 @@ export const createClientAssignment = async (
     .single();
 
   if (error) throw error;
-
-  // Log audit event for client assignment creation
-  if (userId && workspaceId && data) {
-    await logInsert(workspaceId, userId, 'client_assignments', data.id, data, 'Clients');
-  }
-
   return data;
 };
 
@@ -166,30 +186,13 @@ export const createClientAssignments = async (
     .select();
 
   if (error) throw error;
-
-  // Log audit events for each client assignment creation
-  if (userId && workspaceId && data && data.length > 0) {
-    await Promise.all(
-      data.map((assignment: any) =>
-        logInsert(workspaceId, userId, 'client_assignments', assignment.id, assignment, 'Clients')
-      )
-    );
-  }
-
   return data || [];
 };
 
 /**
  * Delete a client assignment
  */
-export const deleteClientAssignment = async (assignmentId: string, workspaceId: string, userId?: string) => {
-  // Fetch before data for audit log
-  const { data: beforeData } = await (supabase as any)
-    .from("client_assignments")
-    .select("*")
-    .eq("id", assignmentId)
-    .maybeSingle();
-
+export const deleteClientAssignment = async (assignmentId: string, userId?: string) => {
   const { data, error } = await (supabase as any)
     .from("client_assignments")
     .delete()
@@ -198,12 +201,6 @@ export const deleteClientAssignment = async (assignmentId: string, workspaceId: 
     .single();
 
   if (error) throw error;
-
-  // Log audit event for client assignment deletion
-  if (userId && workspaceId && beforeData) {
-    await logDelete(workspaceId, userId, 'client_assignments', assignmentId, beforeData, 'Clients');
-  }
-
   return data;
 };
 
@@ -229,24 +226,8 @@ export const updateClientAssignments = async (
   workspaceMemberIds: string[],
   userId?: string
 ) => {
-  // Fetch before data for audit log (all existing assignments)
-  const { data: beforeAssignments } = await (supabase as any)
-    .from("client_assignments")
-    .select("*")
-    .eq("client_id", clientId)
-    .eq("workspace_id", workspaceId);
-
   // Delete all existing assignments
   await deleteAllClientAssignments(clientId, workspaceId);
-
-  // Log audit events for deleted assignments
-  if (userId && workspaceId && beforeAssignments && beforeAssignments.length > 0) {
-    await Promise.all(
-      beforeAssignments.map((assignment: any) =>
-        logDelete(workspaceId, userId, 'client_assignments', assignment.id, assignment, 'Clients')
-      )
-    );
-  }
   
   // Create new assignments
   if (workspaceMemberIds.length > 0) {

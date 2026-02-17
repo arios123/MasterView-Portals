@@ -8,14 +8,14 @@ import { Money } from '@/contexts/PriceContext';
 import { cn } from '@/lib/utils';
 
 interface ChangeOrderMaterialItemProps {
-  item: any; // Item with calculated waste, qtyWithWaste, total, and potentially isDeleted
-  isAdded?: boolean; // Whether this item is newly added (not in baseline)
-  isNameModified?: boolean; // Whether the item's name has been modified from baseline
-  qtyChange?: 'increased' | 'decreased' | null; // Whether qty was increased or decreased
-  priceChange?: 'increased' | 'decreased' | null; // Whether price was increased or decreased
-  baselineQty?: number; // Original qty from baseline
-  baselinePrice?: number; // Original price from baseline
-  baselineTotal?: number; // Original total from baseline (qty * price)
+  item: any;
+  isAdded?: boolean;
+  isNameModified?: boolean;
+  qtyChange?: 'increased' | 'decreased' | null;
+  priceChange?: 'increased' | 'decreased' | null;
+  baselineQty?: number;
+  baselinePrice?: number;
+  baselineTotal?: number;
   onUpdateName: (id: string, name: string) => void;
   onUpdateQty: (id: string, qty: number) => void;
   onUpdatePrice: (id: string, price: number) => void;
@@ -59,7 +59,7 @@ export function ChangeOrderMaterialItem({
       className={cn(
         'border rounded-xl p-2 gap-1 flex flex-col min-w-0 max-w-full overflow-x-hidden',
         isDeleted && 'border-destructive border-2',
-        !isDeleted && isAdded && 'border-primary border-2'
+        !isDeleted && isAdded && 'border-green-500 border-2'
       )}
     >
       <Textarea
@@ -93,7 +93,7 @@ export function ChangeOrderMaterialItem({
             value={item.qty ?? ''}
             onChange={(e) => {
               const value = e.target.value;
-              onUpdateQty(item.id, value === '' ? undefined : (isNaN(parseFloat(value)) ? undefined : parseFloat(value)));
+              onUpdateQty(item.id, value === '' || isNaN(parseFloat(value)) ? 0 : parseFloat(value));
             }}
             disabled={readOnly || isDeleted}
           />
@@ -116,7 +116,7 @@ export function ChangeOrderMaterialItem({
                 value={item.unitPrice ?? ''}
                 onChange={(e) => {
                   const value = e.target.value;
-                  onUpdatePrice(item.id, value === '' ? undefined : (isNaN(parseFloat(value)) ? undefined : parseFloat(value)));
+                  onUpdatePrice(item.id, value === '' || isNaN(parseFloat(value)) ? 0 : parseFloat(value));
                 }}
                 disabled={readOnly || isDeleted}
               />

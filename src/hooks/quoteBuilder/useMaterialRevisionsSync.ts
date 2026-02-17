@@ -96,6 +96,7 @@ export async function syncMaterialRevisions(versionId: string, materialItems: Ma
       if (insertError) throw insertError;
     }
 
+    console.log(`Synced material_revisions: ${revisionsToKeep.length} kept, ${revisionsToAdd.length} added`);
   } catch (error) {
     console.error('Error syncing material revisions:', error);
     // Don't throw - this is a non-critical operation

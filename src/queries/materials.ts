@@ -1,9 +1,17 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockMaterialOptions } from '@/utils/mockData';
 
 /**
  * Fetch material options for a workspace
  */
 export const fetchMaterialOptions = async (workspaceId: string, limit = 200, offset = 0) => {
+  if (isDemoMode()) {
+    const mockMaterials = getMockMaterialOptions();
+    return mockMaterials.slice(offset, offset + limit);
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from('material_options')
     .select('*')
@@ -76,6 +84,21 @@ export const deleteMaterialOptions = async (materialIds: string[], workspaceId: 
  * Fetch version materials for a project version
  */
 export const fetchVersionMaterials = async (versionId: string) => {
+  if (isDemoMode()) {
+    const { getMockVersionMaterials, getMockMaterialOptions } = await import('@/utils/mockData');
+    const mockVersionMaterials = getMockVersionMaterials();
+    const mockMaterials = getMockMaterialOptions();
+    
+    // Filter by version_id and attach material_options
+    return mockVersionMaterials
+      .filter(vm => vm.version_id === versionId)
+      .map(vm => ({
+        ...vm,
+        material_options: mockMaterials.find(m => m.id === vm.material_id) || null,
+      }));
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await supabase
     .from('version_materials')
     .select('*, material_options (*)')

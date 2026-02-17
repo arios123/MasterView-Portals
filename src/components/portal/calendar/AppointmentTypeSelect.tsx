@@ -15,7 +15,7 @@ export function AppointmentTypeSelect({ value, onValueChange, disabled }: Appoin
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Event Type (Optional)</label>
+      <label className="text-sm font-medium">Appointment Type *</label>
       <Select value={value} onValueChange={onValueChange} disabled={disabled || loading}>
         <SelectTrigger className="rounded-xl bg-card border-border">
           <SelectValue placeholder={loading ? "Loading..." : "Select appointment type..."} />

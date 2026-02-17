@@ -110,22 +110,21 @@ export function useCalendarEvents({ workspaceId, initialEvents, addEvent }: UseC
           
           return {
             id: event.id,
-            title: event.title || 'Untitled Event', // NEW: Title field
-            clientId: event.client_id || undefined,
-            clientName: event.client_name || undefined,
-            projectId: event.project_id || undefined, // NEW: project_id
-            projectType: event.project_type || undefined,
-            appointmentTypeId: event.appointment_type_id || undefined,
-            address: event.address || undefined,
-            assignedTo: attendeeUserIds.length > 0 ? attendeeUserIds : [],
+            title: event.title ?? '',
+            clientId: event.client_id,
+            clientName: event.client_name,
+            projectId: event.project_id,
+            projectType: event.project_type,
+            appointmentTypeId: event.appointment_type_id,
+            address: event.address,
+            assignedTo: attendeeUserIds.length > 0 ? attendeeUserIds : (event.assigned_to || []),
             date: event.event_date,
             time: event.event_time,
             created_by: event.created_by,
             created_at: event.created_at,
             updated_by: event.updated_by,
             updated_at: event.updated_at,
-            attendees: attendees, // Add attendees with names and roles
-            // REMOVED: notes, phone, email
+            attendees,
           };
         });
 

@@ -70,6 +70,13 @@ export const saveRolePermissions = async (
  * Note: The edge function should handle workspace_id internally based on the authenticated user's workspace
  */
 export const inviteUser = async (email: string, role: string, workspaceId?: string) => {
+  // COMMENTED OUT IN DEMO MODE - demo is read-only
+  const { blockDemoWrite } = await import('@/utils/demoMode');
+  if (blockDemoWrite('invite user')) {
+    throw new Error('Demo mode is read-only');
+  }
+
+  // COMMENTED OUT IN DEMO MODE - demo is read-only
   const { data, error } = await supabase.functions.invoke('invite-user', {
     body: {
       email,

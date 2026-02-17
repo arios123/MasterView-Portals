@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { getUserPermissions } from '@/queries/permissions';
 import { Role, FeatureKey } from '@/stores/adminStore';
+import { isDemoMode } from '@/utils/demoMode';
 
 // Re-export FeatureKey for convenience
 export type { FeatureKey };
@@ -18,17 +19,29 @@ export const usePermissions = () => {
   const [permissionKeys, setPermissionKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const demoMode = isDemoMode();
+
   const userRole = useMemo(() => {
+    if (demoMode) {
+      return 'Admin' as Role;
+    }
     // Get role from workspace_members via WorkspaceContext
     if (currentUserRole) {
       return currentUserRole as Role;
     }
     // No default fallback
     return '' as Role;
-  }, [currentUserRole]);
+  }, [currentUserRole, demoMode]);
 
-  // Fetch permissions from database
+  // Fetch permissions from database (skip in demo mode)
   useEffect(() => {
+    if (demoMode) {
+      // In demo mode, grant all permissions (empty array means all permissions granted via can() function)
+      setPermissionKeys([]);
+      setLoading(false);
+      return;
+    }
+
     if (user && currentWorkspace?.id) {
       setLoading(true);
       getUserPermissions(user.id, currentWorkspace.id)
@@ -45,13 +58,17 @@ export const usePermissions = () => {
       setPermissionKeys([]);
       setLoading(false);
     }
-  }, [user, currentWorkspace?.id]);
+  }, [user, currentWorkspace?.id, demoMode]);
 
   /**
    * Check if user has a specific permission key
    * Follows the scope.target.action pattern (e.g., "tab.projects.view", "component.document_generation.edit")
+   * In demo mode, always returns true
    */
   const can = (permissionKey: string): boolean => {
+    if (demoMode) {
+      return true; // Demo mode: grant all permissions
+    }
     return permissionKeys.includes(permissionKey);
   };
 

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Item } from '@/types/materials';
 import { uid } from '@/utils/materialsUtils';
 import { useLocalStorageCache } from '@/hooks/useLocalStorageCache';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface UseMaterialsLocalStateProps {
   versionId: string | null;
@@ -29,7 +30,19 @@ export function useMaterialsLocalState({ versionId, contractItems, cacheKey }: U
   useEffect(() => {
     const loadInitialRevisions = async () => {
       if (!versionId) {
-        // No version, clone from contract items
+        if (actualItems.length === 0 && contractItems.length > 0) {
+          const cloned = contractItems.map((it) => ({
+            ...it,
+            linkedTo: it.id,
+            linkedName: it.name,
+            id: uid(),
+            unmodified: true,
+          }));
+          setActualItems(cloned);
+        }
+        return;
+      }
+      if (isDemoMode()) {
         if (actualItems.length === 0 && contractItems.length > 0) {
           const cloned = contractItems.map((it) => ({
             ...it,
@@ -68,13 +81,6 @@ export function useMaterialsLocalState({ versionId, contractItems, cacheKey }: U
             setActualItems(cloned);
           }
         } else if (data && data.length > 0) {
-          // When we have cached items (e.g. restored from localStorage with links), retain them
-          // so that "linked to In Contract" state is not lost. Only overwrite when we have no cache.
-          if (hasCachedItems) {
-            // Keep existing actualItems (preserve links and any unsaved edits)
-            return;
-          }
-
           // Fetch current version_materials to validate/remap linked_to_id
           const { data: currentVersionMaterials } = await supabase
             .from('version_materials')
@@ -115,6 +121,7 @@ export function useMaterialsLocalState({ versionId, contractItems, cacheKey }: U
               notes: item.notes || undefined,
             };
           });
+          // Always update with database data (source of truth)
           setActualItems(formattedRevisions);
         } else {
           // No saved revisions in database

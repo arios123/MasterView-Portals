@@ -31,7 +31,6 @@ export function MaterialsSaveButton({
   return (
     <div className={inline ? "flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 pt-3 border-t border-border/60" : "fixed bottom-6 right-6 z-50 flex flex-col md:flex-row md:items-center gap-3"}>
       {isSoldProject ? (
-        // For sold projects: show current draft name as read-only
         <div className={inline ? "bg-muted/30 border border-border/60 rounded-md px-2 flex items-center h-8 min-w-0 w-full sm:w-auto sm:max-w-[200px]" : "bg-background border rounded-lg shadow-lg p-3 min-w-[280px]"}>
           <Input
             value={currentDraftName || 'Sold Version'}
@@ -41,7 +40,6 @@ export function MaterialsSaveButton({
           {!inline && <p className="text-xs text-muted-foreground mt-1">Sold project - updating existing version</p>}
         </div>
       ) : (
-        // For non-sold projects: allow entering new draft name
         <div className={inline ? "border border-border/60 rounded-md px-2 flex items-center h-8 min-w-0 w-full sm:w-auto sm:max-w-[200px]" : "bg-background border rounded-lg shadow-lg p-3 min-w-[280px]"}>
           <Input
             value={draftName}

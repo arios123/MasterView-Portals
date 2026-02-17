@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
-import { 
-  fetchProjectCrewAssignments, 
+import {
+  fetchProjectCrewAssignments,
   createProjectCrewAssignment,
   deleteProjectCrewAssignment,
-  updateProjectCrewAssignments
 } from '@/queries/projectCrewAssignments';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,7 +26,7 @@ export const useProjectCrewAssignments = (projectId: string | undefined) => {
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
   const workspaceId = currentWorkspace?.id;
-  
+
   const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
@@ -61,7 +60,6 @@ export const useProjectCrewAssignments = (projectId: string | undefined) => {
     if (!workspaceId) return;
 
     try {
-      // Fetch workspace members with user details
       const { data: membersData, error: membersError } = await (supabase as any)
         .from("workspace_members")
         .select("id, user_id")
@@ -96,7 +94,6 @@ export const useProjectCrewAssignments = (projectId: string | undefined) => {
   const handleAddCrewMember = useCallback(async () => {
     if (!selectedMemberId || !workspaceId || !projectId || !user) return;
 
-    // Check if already assigned
     if (crewMembers.some(c => c.workspaceMemberId === selectedMemberId)) {
       toast.error('This crew member is already assigned');
       return;
@@ -124,7 +121,7 @@ export const useProjectCrewAssignments = (projectId: string | undefined) => {
       console.error('Error removing crew member:', error);
       toast.error('Failed to remove crew member');
     }
-  }, [user, fetchCrewMembers]);
+  }, [user, workspaceId, fetchCrewMembers]);
 
   useEffect(() => {
     if (workspaceId && projectId) {

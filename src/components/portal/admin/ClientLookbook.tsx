@@ -13,6 +13,7 @@ import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { Can } from '@/components/Can';
 import Papa from 'papaparse';
 import { useLookbookCategories } from '@/hooks/lookbook/useLookbookCategories';
+import { isDemoMode } from '@/utils/demoMode';
 
 type LookbookItem = {
   id: string;
@@ -25,7 +26,6 @@ type LookbookItem = {
   price?: number;
   model_number?: string;
   collection?: string;
-  title?: string;
 };
 
 export function ClientLookbook() {
@@ -44,7 +44,7 @@ export function ClientLookbook() {
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [csvConfirmOpen, setCsvConfirmOpen] = useState(false);
   const [csvItems, setCsvItems] = useState<any[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (workspaceId) {
@@ -137,7 +137,6 @@ export function ClientLookbook() {
       const price = Number(fd.get('price') || '') || null;
       const modelNumber = String(fd.get('model_number') || '').trim() || null;
       const collection = String(fd.get('collection') || '').trim() || null;
-      const title = String(fd.get('title') || '').trim() || null;
 
       if (!workspaceId) {
         toast({ title: 'Error', description: 'Workspace not available', variant: 'destructive' });
@@ -152,7 +151,7 @@ export function ClientLookbook() {
         // Update existing item
         const { error } = await (supabase as any)
           .from('lookbook_options')
-          .update({ category, image: finalImageUrl, brand, style, finish, link, price, model_number: modelNumber, collection, title })
+          .update({ category, image: finalImageUrl, brand, style, finish, link, price, model_number: modelNumber, collection })
           .eq('id', editing.id)
           .eq('workspace_id', workspaceId);
 
@@ -161,7 +160,7 @@ export function ClientLookbook() {
         // Insert new item
         const { error } = await supabase
           .from('lookbook_options')
-          .insert({ category, image: finalImageUrl, brand, style, finish, link, price, model_number: modelNumber, collection, title, workspace_id: workspaceId });
+          .insert({ category, image: finalImageUrl, brand, style, finish, link, price, model_number: modelNumber, collection, workspace_id: workspaceId });
 
         if (error) throw error;
       }
@@ -285,7 +284,6 @@ export function ClientLookbook() {
         }
 
         // Validate and trim optional fields
-        const title = row.title?.trim();
         const modelNumber = row.model_number?.trim();
         const collection = row.collection?.trim();
         
@@ -308,7 +306,6 @@ export function ClientLookbook() {
           price: row.price ? parseFloat(row.price) : null,
           model_number: modelNumber || null,
           collection: collection || null,
-          title: title || null,
           image: 'https://via.placeholder.com/400x300?text=No+Image' // Default placeholder
         });
       });
@@ -419,7 +416,7 @@ export function ClientLookbook() {
               </div>
             )}
             <CardContent className="pt-3">
-              <div className="font-medium">{i.title ? `${i.brand} - ${i.title}` : i.brand}</div>
+              <div className="font-medium">{i.brand} • {i.style}</div>
               <div className="text-sm text-muted-foreground">{i.finish}</div>
               <div className="flex items-center justify-between mt-2">
                 <div className="text-sm">{i.price ? `$${i.price}` : '—'}</div>
@@ -512,12 +509,6 @@ export function ClientLookbook() {
               </div>
 
               <div>
-                <Label>Title</Label>
-                <Input name="title" defaultValue={editing?.title || ''} placeholder="Optional display title" />
-                <p className="text-xs text-muted-foreground mt-1">Displayed as "Brand - Title" when provided</p>
-              </div>
-
-              <div>
                 <Label>Brand</Label>
                 <Input name="brand" defaultValue={editing?.brand} required />
               </div>
@@ -587,14 +578,14 @@ export function ClientLookbook() {
                   <ul className="list-disc list-inside space-y-1">
                     <li>Header row is required.</li>
                     <li>
-                      Required header columns (lowercase):{" "}
+                      Required header columns (lowercase):{' '}
                       <code>category</code>, <code>brand</code>, <code>style</code>, <code>finish</code>, <code>link</code>, <code>price</code>.
                     </li>
                     <li>
                       Optional columns: <code>title</code>, <code>model_number</code>, <code>collection</code>.
                     </li>
                     <li>
-                      Any <code>category</code> value is allowed. Categories not in your workspace will appear under{" "}
+                      Any <code>category</code> value is allowed. Categories not in your workspace will appear under{' '}
                       <span className="font-semibold">Other</span>.
                     </li>
                   </ul>
@@ -628,8 +619,9 @@ export function ClientLookbook() {
             <Button
               onClick={() => fileInputRef.current?.click()}
               className="gap-2"
+              disabled={isDemoMode()}
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="h-4 w-4" />
               Choose CSV file
             </Button>
           </DialogFooter>

@@ -1,4 +1,38 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/utils/demoMode';
+
+/**
+ * Get materials tax rate for a workspace (used for project totals, export, etc.)
+ */
+export const getMaterialsTaxRate = async (workspaceId: string): Promise<number> => {
+  if (isDemoMode()) return 0.06;
+  const { data, error } = await (supabase as any)
+    .from('workspaces')
+    .select('materials_tax_rate')
+    .eq('id', workspaceId)
+    .single();
+  if (error || data == null) return 0.06;
+  return Number(data.materials_tax_rate ?? 0.06);
+};
+
+/**
+ * Update materials tax rate for a workspace
+ */
+export const updateMaterialsTaxRate = async (
+  workspaceId: string,
+  taxRate: number,
+  _userId: string
+): Promise<void> => {
+  if (isDemoMode()) return;
+  if (taxRate < 0 || taxRate > 1) {
+    throw new Error('Tax rate must be between 0 and 1 (0% to 100%)');
+  }
+  const { error } = await (supabase as any)
+    .from('workspaces')
+    .update({ materials_tax_rate: taxRate })
+    .eq('id', workspaceId);
+  if (error) throw error;
+};
 
 /**
  * Fetch workspace members for a user
@@ -66,45 +100,5 @@ export const updateWorkspaceOwner = async (workspaceId: string, newOwnerId: stri
 
   if (error) throw error;
   return data;
-};
-
-/**
- * Get materials tax rate for a workspace
- * Returns the tax rate as a decimal (e.g., 0.06 for 6%)
- */
-export const getMaterialsTaxRate = async (workspaceId: string): Promise<number> => {
-  const { data, error } = await (supabase as any)
-    .from('workspaces')
-    .select('materials_tax_rate')
-    .eq('id', workspaceId)
-    .single();
-
-  if (error) throw error;
-  // Default to 0.06 (6%) if not set
-  return data?.materials_tax_rate ?? 0.06;
-};
-
-/**
- * Update materials tax rate for a workspace
- * @param workspaceId - The workspace ID
- * @param taxRate - The tax rate as a decimal (e.g., 0.06 for 6%)
- * @param userId - The user ID for accountability tracking
- */
-export const updateMaterialsTaxRate = async (
-  workspaceId: string,
-  taxRate: number,
-  userId: string
-): Promise<void> => {
-  // Validate tax rate is between 0 and 1
-  if (taxRate < 0 || taxRate > 1) {
-    throw new Error('Tax rate must be between 0 and 1 (0% to 100%)');
-  }
-
-  const { error } = await (supabase as any)
-    .from('workspaces')
-    .update({ materials_tax_rate: taxRate })
-    .eq('id', workspaceId);
-
-  if (error) throw error;
 };
 

@@ -23,15 +23,13 @@ import { toast } from "sonner";
 import { Money } from "@/contexts/PriceContext";
 import { computeTotals } from "@/utils/calculations";
 import { useProjectVersions, useActiveDraft, useChangeOrders, usePayments, useAssignedUser } from "@/hooks/useProjectData";
-import { getChangeOrderBaselineItems } from "@/utils/changeOrderHelpers";
 import { useLocalStorageCache, useCacheKey, useClearProjectCache } from "@/hooks/useLocalStorageCache";
-import { logDelete } from "@/lib/auditLog";
-import { useAuth } from "@/contexts/AuthContext";
+import { isDemoMode } from "@/utils/demoMode";
+import { getMockDbProjects, getMockVersionMaterials, getMockVersionLabor, getMockMaterialOptions, getMockLaborOptions } from "@/utils/mockData";
 
 export function ClientProfile({ project, onClose, hidePrices, setHidePrices, userRole }: { project: Project; onClose: () => void; hidePrices: boolean; setHidePrices: (value: boolean) => void; userRole: string }) {
   const params = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { can } = usePermissions();
   const { currentWorkspace } = useWorkspace();
   const { projectStatuses } = useProjectStatuses(currentWorkspace?.id);
@@ -138,7 +136,7 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
   const { versions: projectVersions, isLoading, refetch: refetchVersions } = useProjectVersions(isClientWithoutProject ? '' : project.id);
   const { activeDraftItems, activeDraftMultiplier, activeVersionId, activeDraftName, refetch: refetchActiveDraft } = useActiveDraft(isClientWithoutProject ? '' : project.id, !isClientWithoutProject && (tab === "Activity" || tab === "Materials" || tab === "Contract Builder"));
   const { changeOrderVersions, activeChangeOrders, refetch: refetchChangeOrders } = useChangeOrders(isClientWithoutProject ? '' : project.id, !isClientWithoutProject && (tab === "Activity" || tab === "Change Orders" || tab === "Materials"));
-  const { incoming, refetch: refetchPayments } = usePayments(isClientWithoutProject ? '' : project.id, !isClientWithoutProject && (tab === "Activity" || tab === "Payments"));
+  const { incoming, refetch: refetchPayments } = usePayments(isClientWithoutProject ? '' : project.id, !isClientWithoutProject && tab === "Payments");
   const assignedUserName = useAssignedUser(project.assignedUserId);
 
   const [currentDraftVersion, setCurrentDraftVersion] = useState<string | null>(null);
@@ -213,6 +211,8 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
 
   // Handle draft changes from Materials or Quote Builder
   const handleDraftChanged = async (newVersionId: string, newDraftName: string) => {
+    console.log("Draft changed:", newVersionId, newDraftName);
+    
     // Refetch active draft to get latest data
     await refetchActiveDraft();
     
@@ -267,6 +267,46 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
 
   const loadActiveDraftForChangeOrders = async () => {
     try {
+      if (isDemoMode()) {
+        const mockProjects = getMockDbProjects();
+        const dbProject = mockProjects.find((p: any) => p.project_id === project.id);
+        const activeVersionId = dbProject?.active_version;
+        if (!activeVersionId) {
+          setChangeItems([]);
+          setBaselineChangeItems([]);
+          return;
+        }
+        const versionLabor = getMockVersionLabor().filter((vl: any) => vl.version_id === activeVersionId);
+        const versionMaterials = getMockVersionMaterials().filter((vm: any) => vm.version_id === activeVersionId);
+        const laborOpts = getMockLaborOptions();
+        const materialOpts = getMockMaterialOptions();
+        const items: LineItem[] = [];
+        versionLabor.forEach((item: any) => {
+          const opt = laborOpts.find((l: any) => l.id === item.labor_id);
+          items.push({
+            id: item.labor_id,
+            name: item.item_name || opt?.name || "Labor",
+            qty: Number(item.quantity),
+            unitPrice: Number(item.price),
+            kind: "labor",
+          });
+        });
+        versionMaterials.forEach((item: any) => {
+          const opt = materialOpts.find((m: any) => m.id === item.material_id);
+          items.push({
+            id: item.material_id,
+            name: item.item_name || opt?.name || "Material",
+            qty: Number(item.quantity),
+            unitPrice: Number(item.price),
+            wastePct: Number(item.waste_pct) || 0,
+            kind: "material",
+          });
+        });
+        setChangeItems(items);
+        setBaselineChangeItems(JSON.parse(JSON.stringify(items)));
+        return;
+      }
+
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('active_version')
@@ -297,7 +337,7 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
         if (item.labor_options) {
           items.push({
             id: item.labor_options.id,
-            name: item.item_name || item.labor_options.name, // Use saved name if available, otherwise catalog name
+            name: item.item_name || item.labor_options.name,
             qty: Number(item.quantity),
             unitPrice: Number(item.price),
             kind: 'labor'
@@ -309,7 +349,7 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
         if (item.material_options) {
           items.push({
             id: item.material_options.id,
-            name: item.item_name || item.material_options.name, // Use saved name if available, otherwise catalog name
+            name: item.item_name || item.material_options.name,
             qty: Number(item.quantity),
             unitPrice: Number(item.price),
             wastePct: Number(item.waste_pct) || 0,
@@ -404,29 +444,19 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
     return 'bg-white border-slate-200';
   };
 
-  const getVersionStatusColor = (status: string, isActive: boolean, isChangeOrderActive?: boolean) => {
-    const isChangeOrder = status.toLowerCase().includes('change order');
-    const isDraft = !isChangeOrder;
-    
-    // For drafts: green if it's the active_version (sold/active draft)
-    if (isDraft) {
-      if (isActive && project.status === soldStatusName) {
-        return 'bg-success/20 border-success/40';
-      }
-      if (isActive) {
-        return 'bg-success/10 border-success/30';
-      }
+  const getVersionStatusColor = (status: string, isActive: boolean) => {
+    if (isActive && project.status === soldStatusName) {
+      return 'bg-success/20 border-success/40';
+    }
+    if (isActive) {
+      return 'bg-success/10 border-success/30';
+    }
+    if (status.toLowerCase().includes('draft')) {
       return 'bg-muted border-border';
     }
-    
-    // For change orders: use theme-based colors when is_active is true (separate from active_version)
-    if (isChangeOrder) {
-      if (isChangeOrderActive) {
-        return 'bg-primary/10 border-primary/30';
-      }
+    if (status.toLowerCase().includes('change order')) {
       return 'bg-primary/5 border-primary/20';
     }
-    
     return 'bg-card border-border';
   };
 
@@ -444,6 +474,10 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
   };
 
   const handleToggleChangeOrderActive = async (versionId: string, currentActive: boolean) => {
+    if (isDemoMode()) {
+      toast.info("Updating change order status is disabled in demo mode.");
+      return;
+    }
     try {
       const { error } = await supabase
         .from('project_versions')
@@ -460,27 +494,54 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
     }
   };
 
-  const handleDraftSelect = async (draft: any) => {
+  const handleDraftSelect = (draft: any) => {
     setSelectedDraft(draft);
-    
-    // If it's a change order, also load baselineItems (always sold/active draft)
-    if (draft?.status?.toLowerCase().includes('change order') && currentWorkspace?.id) {
-      try {
-        const baselineItems = await getChangeOrderBaselineItems(
-          null,
-          project.id,
-          currentWorkspace.id
-        );
-        setBaselineChangeItems(baselineItems);
-      } catch (error) {
-        console.error('Error loading baseline items for change order:', error);
-        setBaselineChangeItems([]);
-      }
-    }
   };
 
   const handleVersionClick = async (version: any) => {
     try {
+      if (isDemoMode()) {
+        const versionLabor = getMockVersionLabor().filter((vl: any) => vl.version_id === version.version_id);
+        const versionMaterials = getMockVersionMaterials().filter((vm: any) => vm.version_id === version.version_id);
+        const laborOpts = getMockLaborOptions();
+        const materialOpts = getMockMaterialOptions();
+        const loadedItems: LineItem[] = [];
+        versionLabor.forEach((item: any) => {
+          const opt = laborOpts.find((l: any) => l.id === item.labor_id);
+          loadedItems.push({
+            id: item.labor_id,
+            kind: "labor",
+            name: item.item_name || opt?.name || "Labor",
+            qty: Number(item.quantity),
+            unitPrice: Number(item.price),
+          });
+        });
+        versionMaterials.forEach((item: any) => {
+          const opt = materialOpts.find((m: any) => m.id === item.material_id);
+          loadedItems.push({
+            id: item.material_id,
+            kind: "material",
+            name: item.item_name || opt?.name || "Material",
+            qty: Number(item.quantity),
+            unitPrice: Number(item.price),
+            wastePct: Number(item.waste_pct || 0),
+          });
+        });
+        const isChangeOrder = version.status?.toLowerCase().includes("change order");
+        if (isChangeOrder) {
+          setChangeItems(loadedItems);
+          setSelectedDraft(version);
+          setEditingChangeOrderVersionId(version.version_id);
+          setTab("Change Orders");
+        } else {
+          setQuoteItems(loadedItems);
+          setEditingDraftVersionId(version.version_id);
+          setTab("Contract Builder");
+        }
+        toast.success(`Loaded ${version.status} - Version ${version.version_number}`);
+        return;
+      }
+
       // Fetch labor items for this version
       const { data: laborData, error: laborError } = await supabase
         .from('version_labor')
@@ -509,9 +570,9 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
       if (laborData) {
         laborData.forEach((item: any) => {
           loadedItems.push({
-            id: item.labor_id,  // Use the foreign key, not the junction table ID
+            id: item.labor_id,
             kind: 'labor',
-            name: item.item_name || item.labor_options?.name || '', // Use saved name if available, otherwise catalog name
+            name: item.item_name || item.labor_options?.name || '',
             qty: Number(item.quantity),
             unitPrice: Number(item.price)
           });
@@ -521,9 +582,9 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
       if (materialData) {
         materialData.forEach((item: any) => {
           loadedItems.push({
-            id: item.material_id,  // Use the foreign key, not the junction table ID
+            id: item.material_id,
             kind: 'material',
-            name: item.item_name || item.material_options?.name || '', // Use saved name if available, otherwise catalog name
+            name: item.item_name || item.material_options?.name || '',
             qty: Number(item.quantity),
             unitPrice: Number(item.price),
             wastePct: Number(item.waste_pct || 0)
@@ -531,29 +592,12 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
         });
       }
 
-      // Determine if it's a change order or draft
       const isChangeOrder = version.status.toLowerCase().includes('change order');
 
-      // Set the items in the appropriate state
       if (isChangeOrder) {
         setChangeItems(loadedItems);
         setSelectedDraft(version);
         setEditingChangeOrderVersionId(version.version_id);
-        
-        // Always use sold/active draft as baseline for all change orders (first- and second-degree).
-        // Load flow applies deltas to baseline; save flow compares to baseline for cumulative deltas.
-        try {
-          const baselineItems = await getChangeOrderBaselineItems(
-            null,
-            project.id,
-            currentWorkspace?.id || ''
-          );
-          setBaselineChangeItems(baselineItems);
-        } catch (error) {
-          console.error('Error loading baseline items for change order:', error);
-          setBaselineChangeItems([]);
-        }
-        
         setTab('Change Orders');
       } else {
         setQuoteItems(loadedItems);
@@ -710,11 +754,6 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
 
       if (versionError) throw versionError;
 
-      // Log audit event for version deletion
-      if (currentWorkspace?.id && user && versionData) {
-        await logDelete(currentWorkspace.id, user.id, 'project_versions', versionIdToDelete, versionData, 'Projects');
-      }
-
       toast.success("Version deleted successfully!");
       
       // Refresh the versions list
@@ -843,11 +882,6 @@ export function ClientProfile({ project, onClose, hidePrices, setHidePrices, use
                 clearChangeItemsCache();
                 clearBaselineChangeItemsCache();
               }}
-              onClearEditingVersionIdOnly={() => {
-                // Only clear editing version ID, preserve items cache
-                setEditingChangeOrderVersionId(null);
-              }}
-              onBaselineItemsChange={setBaselineChangeItems}
               readOnly={!hasWriteAccess('Change Orders')}
             />
           </TabsContent>

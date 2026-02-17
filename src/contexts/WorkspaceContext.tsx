@@ -1,7 +1,8 @@
-/* @refresh reset */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode, blockDemoWrite } from '@/utils/demoMode';
+import { getMockWorkspace, getMockWorkspaceMember } from '@/utils/mockData';
 
 export interface Workspace {
   id: string;
@@ -54,6 +55,8 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const demoMode = isDemoMode();
 
   // Helper function to fetch user role from RBAC system
   const fetchUserRoleFromRBAC = useCallback(async (workspaceMemberId: string, workspaceId: string): Promise<string | null> => {
@@ -197,12 +200,29 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     }
   }, [user, fetchUserRoleFromRBAC]);
 
+  // Demo mode initialization
   useEffect(() => {
+    if (demoMode && user) {
+      const mockWorkspace = getMockWorkspace();
+      const mockMember = getMockWorkspaceMember();
+      setWorkspaces([mockWorkspace]);
+      setWorkspaceMembers([mockMember]);
+      setCurrentWorkspace(mockWorkspace);
+      setCurrentUserRole('Admin');
+      setLoading(false);
+      return;
+    }
+  }, [demoMode, user]);
+
+  useEffect(() => {
+    if (demoMode) return; // Skip production logic in demo mode
     refreshWorkspaces();
-  }, [refreshWorkspaces]);
+  }, [refreshWorkspaces, demoMode]);
 
   // Save current workspace to localStorage when it changes and update user role
   useEffect(() => {
+    if (demoMode) return; // Skip in demo mode
+    
     if (currentWorkspace && user) {
       localStorage.setItem('currentWorkspaceId', currentWorkspace.id);
       // Find user's role in current workspace from RBAC system
@@ -220,9 +240,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       localStorage.removeItem('currentWorkspaceId');
       setCurrentUserRole(null);
     }
-  }, [currentWorkspace, user, workspaceMembers, fetchUserRoleFromRBAC]);
+  }, [currentWorkspace, user, workspaceMembers, fetchUserRoleFromRBAC, demoMode]);
 
   const createWorkspace = async (name: string, slug: string): Promise<Workspace> => {
+    if (blockDemoWrite('create workspace')) {
+      throw new Error('Demo mode is read-only');
+    }
+
     if (!user) {
       throw new Error('User must be authenticated to create a workspace');
     }
@@ -311,6 +335,16 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   };
 
   const switchWorkspace = async (workspaceId: string) => {
+    if (demoMode) {
+      // In demo mode, allow switching (it's just UI state, no backend call)
+      const workspace = workspaces.find(w => w.id === workspaceId);
+      if (workspace) {
+        setCurrentWorkspace(workspace);
+        localStorage.setItem('currentWorkspaceId', workspaceId);
+      }
+      return;
+    }
+
     const workspace = workspaces.find(w => w.id === workspaceId);
     if (workspace && user) {
       setCurrentWorkspace(workspace);

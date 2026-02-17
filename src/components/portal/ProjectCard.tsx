@@ -12,20 +12,20 @@ import { useProjectStatuses } from "@/hooks/useProjectStatuses";
 import { useProjectProgressConfig } from "@/hooks/useProjectProgressConfig";
 import { projectProgressConfigQueries } from "@/queries/projectProgressConfig";
 import { usePermissions } from "@/hooks/usePermissions";
-import { 
-  filterAllowedStatuses, 
-  isStatusDropdownDisabled 
+import {
+  filterAllowedStatuses,
+  isStatusDropdownDisabled
 } from "@/utils/statusPermissions";
 
-export function ProjectCard({ 
-  project, 
-  onStatusChange, 
-  onQuickNoteSave, 
+export function ProjectCard({
+  project,
+  onStatusChange,
+  onQuickNoteSave,
   onProfileClick,
   userRole,
   canEdit = false
-}: { 
-  project: Project; 
+}: {
+  project: Project;
   onStatusChange: (id: string, status: string) => void;
   onQuickNoteSave: (id: string, note: string) => Promise<void>;
   onProfileClick: (project: Project) => void;
@@ -37,7 +37,7 @@ export function ProjectCard({
   const { config: progressConfig } = useProjectProgressConfig(currentWorkspace?.id);
   const { can } = usePermissions();
   const { hidden } = usePrice();
-  
+
   // Local state for quick note input (always starts empty - just for input)
   const [quickNote, setQuickNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -58,20 +58,20 @@ export function ProjectCard({
       noteRef.current.style.maxHeight = 'none';
       const fullHeight = noteRef.current.scrollHeight;
       noteRef.current.style.maxHeight = originalStyle;
-      
+
       const maxHeight = 80; // 5rem = 80px
       setNeedsTruncation(fullHeight > maxHeight);
     } else {
       setNeedsTruncation(false);
     }
   }, [project.quickNote]);
-  
+
   // Filter status options based on permissions
   const allowedStatuses = filterAllowedStatuses(projectStatuses, project.status, can);
-  
+
   // Check if dropdown should be disabled
   const isDropdownDisabled = isStatusDropdownDisabled(project.status, can, canEdit);
-  
+
   // Handle quick note change (local state only)
   const handleQuickNoteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -86,10 +86,10 @@ export function ProjectCard({
       // Get current quick note from project
       const currentQuickNote = project.quickNote || "";
       // Append new note on a new line
-      const newQuickNote = currentQuickNote 
+      const newQuickNote = currentQuickNote
         ? `${currentQuickNote}\n${quickNote.trim()}`
         : quickNote.trim();
-      
+
       await onQuickNoteSave(project.id, newQuickNote);
       // Clear the input after saving
       setQuickNote("");
@@ -116,7 +116,7 @@ export function ProjectCard({
       // Status not found - use cumulative of first segment with a status as fallback
       const firstSegmentWithStatus = sortedSegments.find(s => s.status_id !== null);
       if (!firstSegmentWithStatus) return null;
-      
+
       // Calculate cumulative up to and including this segment
       let cumulative = 0;
       for (const seg of sortedSegments) {
@@ -169,7 +169,7 @@ export function ProjectCard({
           <div className="text-sm text-muted-foreground/70">Crew: {project.crew}</div>
           {project.quickNote && (
             <div className="text-sm mt-1">
-              <div 
+              <div
                 ref={noteRef}
                 className="whitespace-pre-wrap"
                 style={!isExpanded ? { maxHeight: '5rem', overflow: 'hidden' } : undefined}
@@ -209,9 +209,9 @@ export function ProjectCard({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Select 
-            value={project.status || ""} 
-            onValueChange={(v) => onStatusChange(project.id, v)} 
+          <Select
+            value={project.status || ""}
+            onValueChange={(v) => onStatusChange(project.id, v)}
             disabled={isDropdownDisabled}
           >
             <SelectTrigger className="w-[210px] rounded-xl bg-background border-border text-sm">
@@ -240,8 +240,6 @@ export function ProjectCard({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><div className="text-muted-foreground">Total Project Cost</div><div className="font-semibold"><Money value={project.totalCost} /></div></div>
             <div><div className="text-muted-foreground">Total Paid</div><div className="font-semibold"><Money value={project.paid} /></div></div>
-            {/* <div><div className="text-muted-foreground">Next Payment Amount</div><div className="font-semibold"><Money value={project.nextPayment} /></div></div> */}
-            {/* <div><div className="text-muted-foreground">Due At (stage)</div><div className="font-semibold">{project.dueStage || "—"}</div></div> */}
           </div>
         )}
         {/* Actions */}
@@ -254,9 +252,9 @@ export function ProjectCard({
         <div className="pt-2 border-t">
           <div className="text-xs text-muted-foreground mb-1">Quick Note</div>
           <div className="flex gap-1">
-            <Input 
-              placeholder="Type a private note..." 
-              value={quickNote} 
+            <Input
+              placeholder="Type a private note..."
+              value={quickNote}
               onChange={handleQuickNoteChange}
               disabled={!canEdit || isSaving}
               className="flex-1"

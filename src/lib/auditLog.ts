@@ -29,7 +29,6 @@ const RESOURCE_LOCATION_MAP: Record<string, string> = {
   version_materials: 'Projects',
   version_labor: 'Projects',
   material_revisions: 'Projects',
-  project_crew_assignments: 'Projects',
   
   // Calendar
   calendar_events: 'Calendar',
@@ -47,8 +46,6 @@ const RESOURCE_LOCATION_MAP: Record<string, string> = {
   lookbooks: 'LookBook',
   lookbook_options: 'Admin > LookBook',
   project_lookbook_selections: 'LookBook',
-  lookbook_questions: 'LookBook',
-  lookbook_answers: 'LookBook',
   
   // Admin
   workspace_members: 'Admin > Staff',

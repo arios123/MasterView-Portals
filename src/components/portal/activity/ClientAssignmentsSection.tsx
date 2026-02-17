@@ -35,7 +35,6 @@ export function ClientAssignmentsSection({
   loading,
   readOnly = false,
 }: ClientAssignmentsSectionProps) {
-  // Combine available members with currently assigned staff for the dropdown
   const allMembers = [
     ...(assignedStaff.length > 0 ? [{
       id: assignedStaff[0].workspaceMemberId,
@@ -45,14 +44,10 @@ export function ClientAssignmentsSection({
     ...availableMembers
   ];
 
-  // Use update handler if available (single-select mode), otherwise use add/remove
   const handleValueChange = (value: string) => {
     if (onUpdateStaff) {
-      // Single-select mode: directly update when selection changes
-      // If value is undefined or empty, remove assignment
       onUpdateStaff(value || '');
     } else {
-      // Multi-select mode: just set the selected member
       onSelectMember(value);
     }
   };
@@ -63,7 +58,6 @@ export function ClientAssignmentsSection({
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : !readOnly && onUpdateStaff ? (
-        // Single-select mode: show dropdown that directly updates
         <Select
           value={currentStaffMemberId || undefined}
           onValueChange={handleValueChange}
@@ -80,7 +74,6 @@ export function ClientAssignmentsSection({
           </SelectContent>
         </Select>
       ) : assignedStaff.length > 0 ? (
-        // Read-only or multi-select mode: show assigned staff
         <div className="space-y-2">
           {assignedStaff.map((staff) => (
             <div
@@ -90,7 +83,7 @@ export function ClientAssignmentsSection({
               <span className="text-sm font-medium text-foreground">
                 {staff.name || staff.email || 'Unknown'}
               </span>
-              {!readOnly && !onUpdateStaff && (
+              {!readOnly && (
                 <button
                   onClick={() => onRemoveStaff(staff.assignmentId)}
                   className="text-muted-foreground/70 hover:text-destructive transition-colors"

@@ -12,6 +12,7 @@ import { fetchUserById } from '@/queries/users';
 import { createBillingPortalSession } from '@/queries/subscriptions';
 import { toast } from 'sonner';
 import { Users, CreditCard, Loader2 } from 'lucide-react';
+import { isDemoMode } from '@/utils/demoMode';
 
 /**
  * Advanced admin section - Owner only with password protection
@@ -231,30 +232,32 @@ export function Advanced() {
               </Button>
             </div>
 
-            <div className="pt-4 border-t space-y-2">
-              <h3 className="text-sm font-medium">Subscription Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Manage your workspace subscription, update payment methods, view billing history, and cancel if needed.
-              </p>
-              <Button
-                variant="outline"
-                onClick={handleManageSubscription}
-                disabled={isLoadingPortal}
-                className="w-full sm:w-auto"
-              >
-                {isLoadingPortal ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Opening...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Manage Subscription
-                  </>
-                )}
-              </Button>
-            </div>
+            {!isDemoMode() && (
+              <div className="pt-4 border-t space-y-2">
+                <h3 className="text-sm font-medium">Subscription Management</h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage your workspace subscription, update payment methods, view billing history, and cancel if needed.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleManageSubscription}
+                  disabled={isLoadingPortal}
+                  className="w-full sm:w-auto"
+                >
+                  {isLoadingPortal ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Opening...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Manage Subscription
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

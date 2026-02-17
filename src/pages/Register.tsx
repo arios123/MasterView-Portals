@@ -72,7 +72,7 @@ const generateUniqueSlug = async (companyName: string): Promise<string> => {
 type Step = 1 | 2;
 
 export default function Register() {
-  const { user, loading: authLoading, signOut, isPasswordRecovery } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -95,8 +95,7 @@ export default function Register() {
   // Check if user has workspaces and redirect accordingly
   useEffect(() => {
     const checkWorkspaces = async () => {
-      // Don't redirect if we're in a password recovery flow
-      if (!authLoading && user && !isPasswordRecovery) {
+      if (!authLoading && user) {
         try {
           const workspaces = await fetchUserWorkspaceMembers(user.id);
           // If user has workspaces, they've completed onboarding - redirect to dashboard
@@ -126,14 +125,17 @@ export default function Register() {
     };
     
     checkWorkspaces();
-  }, [user, authLoading, navigate, isPasswordRecovery]);
+  }, [user, authLoading, navigate]);
   
   const progress = (step / 2) * 100;
   
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
-        <div className="text-[#617b5d]">Loading...</div>
+      <div 
+        className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white flex items-center justify-center"
+        style={{ backgroundColor: 'rgb(15 23 42)' }}
+      >
+        <div className="text-slate-300">Loading...</div>
       </div>
     );
   }
@@ -386,18 +388,25 @@ export default function Register() {
   };
   
   return (
-    <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10 relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+    <div 
+      className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ backgroundColor: 'rgb(15 23 42)' }}
+    >
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute w-64 h-64 bg-emerald-400/30 blur-3xl rounded-full -top-10 -left-10" />
+        <div className="absolute w-80 h-80 bg-cyan-400/25 blur-3xl rounded-full bottom-0 right-10" />
+      </div>
       
-      <Card className="w-full max-w-xl rounded-2xl border border-[#cfcfcf] bg-white shadow-smooth-lg relative z-10">
+      <Card className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-800/95 backdrop-blur-sm shadow-xl relative z-10">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-2xl font-bold text-[#0B294b]">
-            {step === 1 ? "Create your account" : "Set up your workspace"}
+          <CardTitle className="text-2xl font-bold text-white">
+            {step === 1 ? "Create Your Account" : "Create Your Workspace"}
           </CardTitle>
-          <CardDescription className="mt-2 text-[#617b5d] text-sm">
+          <CardDescription className="mt-2 text-slate-300">
             {step === 1 
-              ? "Tell us a bit about you so we can set up your account."
-              : "Name the workspace you'll use to manage contracts and projects."
+              ? "Get started by creating your account"
+              : "Set up your workspace to begin managing projects"
             }
           </CardDescription>
         </CardHeader>
@@ -405,11 +414,11 @@ export default function Register() {
         <CardContent className="space-y-6">
           {/* Progress Bar */}
           <div className="space-y-2">
-            <div className="flex justify-between text-sm text-[#617b5d]">
-              <span className={step >= 1 ? "font-medium text-[#0B294b]" : ""}>
+            <div className="flex justify-between text-sm text-slate-300">
+              <span className={step >= 1 ? "font-medium text-white" : ""}>
                 Account
               </span>
-              <span className={step >= 2 ? "font-medium text-[#0B294b]" : ""}>
+              <span className={step >= 2 ? "font-medium text-white" : ""}>
                 Workspace
               </span>
             </div>
@@ -419,56 +428,56 @@ export default function Register() {
           {step === 1 && (
             <form onSubmit={(e) => { e.preventDefault(); handleStep1Next(); }} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-[#0B294b]">Full name</Label>
+                <Label htmlFor="name" className="text-slate-200">Full Name</Label>
                 <Input
                   id="name"
                   type="text"
                   placeholder="Enter your full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="rounded-xl bg-white border-[#cfcfcf] text-[#0B294b] placeholder:text-[#8b8b8b] focus:border-[#2b8ac4] focus-visible:ring-[#2b8ac4]"
+                  className="rounded-xl bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-emerald-500"
                   disabled={loading}
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#0B294b]">Email</Label>
+                <Label htmlFor="email" className="text-slate-200">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@business.com"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl bg-white border-[#cfcfcf] text-[#0B294b] placeholder:text-[#8b8b8b] focus:border-[#2b8ac4] focus-visible:ring-[#2b8ac4]"
+                  className="rounded-xl bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-emerald-500"
                   disabled={loading}
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[#0B294b]">Password</Label>
+                <Label htmlFor="password" className="text-slate-200">Password</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="At least 6 characters"
+                  placeholder="Create a password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="rounded-xl bg-white border-[#cfcfcf] text-[#0B294b] placeholder:text-[#8b8b8b] focus:border-[#2b8ac4] focus-visible:ring-[#2b8ac4]"
+                  className="rounded-xl bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-emerald-500"
                   disabled={loading}
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-[#0B294b]">Confirm password</Label>
+                <Label htmlFor="confirmPassword" className="text-slate-200">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="Re-enter your password"
+                  placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="rounded-xl bg-white border-[#cfcfcf] text-[#0B294b] placeholder:text-[#8b8b8b] focus:border-[#2b8ac4] focus-visible:ring-[#2b8ac4]"
+                  className="rounded-xl bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-emerald-500"
                   disabled={loading}
                   required
                 />
@@ -481,37 +490,37 @@ export default function Register() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full rounded-xl border-[#96ab94] bg-[#96ab94]/10 text-[#0B294b]"
+                      className="w-full rounded-xl border-emerald-500 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30"
                       disabled
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Terms and conditions accepted
+                      Terms and Conditions Accepted
                     </Button>
                   ) : (
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full rounded-xl border-[#cfcfcf] bg-white text-[#0B294b] hover:bg-[#e7ebed]"
+                      className="w-full rounded-xl border-slate-500 bg-slate-700/50 text-white hover:bg-slate-600 hover:text-white"
                       onClick={() => setTermsDialogOpen(true)}
                     >
                       <FileText className="mr-2 h-4 w-4" />
-                      Review terms and conditions
+                      Review Terms and Conditions
                     </Button>
                   )}
                 </div>
                 {!termsAccepted && (
-                  <p className="text-xs text-[#8b8b8b] text-center">
-                    You must accept the terms and conditions to continue.
+                  <p className="text-xs text-slate-400 text-center">
+                    You must accept the terms and conditions to continue
                   </p>
                 )}
               </div>
 
               <Button
                 type="submit"
-                className="w-full rounded-xl bg-[#2b8ac4] text-white hover:bg-[#46b7d7] transition-all duration-200 shadow-sm hover:shadow-md"
+                className="w-full rounded-xl bg-emerald-500 text-white hover:bg-emerald-400 transition-all duration-200"
                 disabled={loading || !termsAccepted}
               >
-                {loading ? "Creating account..." : "Continue"}
+                {loading ? "Creating Account..." : "Continue"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
@@ -520,25 +529,25 @@ export default function Register() {
           {step === 2 && (
             <form onSubmit={(e) => { e.preventDefault(); handleStep2Complete(); }} className="space-y-4">
               {user && (
-                <div className="bg-[#e7ebed] border border-[#cfcfcf] rounded-lg p-3 mb-4">
-                  <p className="text-sm text-[#617b5d]">
+                <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-slate-200">
                     Welcome back! Complete your workspace setup to continue.
                   </p>
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="companyName" className="text-[#0B294b]">Workspace name</Label>
+                <Label htmlFor="companyName" className="text-slate-200">Company Name</Label>
                 <Input
                   id="companyName"
                   type="text"
-                  placeholder="e.g. Apex Electrical, Northside Projects"
+                  placeholder="Enter your company name"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="rounded-xl bg-white border-[#cfcfcf] text-[#0B294b] placeholder:text-[#8b8b8b] focus:border-[#2b8ac4] focus-visible:ring-[#2b8ac4]"
+                  className="rounded-xl bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-emerald-500"
                   disabled={loading}
                   required
                 />
-                <p className="text-xs text-[#8b8b8b]">
+                <p className="text-xs text-slate-400">
                   This will be your workspace name. You can change it later.
                 </p>
               </div>
@@ -547,7 +556,7 @@ export default function Register() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex-1 rounded-xl border-[#cfcfcf] text-[#0B294b] hover:bg-[#e7ebed]"
+                  className="flex-1 rounded-xl border-slate-600 text-slate-200 hover:bg-slate-700"
                   onClick={() => setStep(1)}
                   disabled={loading}
                 >
@@ -557,20 +566,20 @@ export default function Register() {
                 
                 <Button
                   type="submit"
-                  className="flex-1 rounded-xl bg-[#2b8ac4] text-white hover:bg-[#46b7d7] transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="flex-1 rounded-xl bg-emerald-500 text-white hover:bg-emerald-400 transition-all duration-200"
                   disabled={loading}
                 >
-                  {loading ? "Creating..." : "Complete setup"}
+                  {loading ? "Creating..." : "Complete Setup"}
                   <Check className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </form>
           )}
           
-          <div className="text-center text-sm text-[#617b5d] pt-4 border-t border-[#cfcfcf] space-y-2">
+          <div className="text-center text-sm text-slate-300 pt-4 border-t border-slate-700 space-y-2">
             {user ? (
               <div className="space-y-2">
-                <p className="text-xs text-[#8b8b8b]">
+                <p className="text-xs text-slate-400">
                   Signed in as {user.email}
                 </p>
                 <Button
@@ -586,7 +595,7 @@ export default function Register() {
                     setCompanyName('');
                     setStep(1);
                   }}
-                  className="text-xs text-[#617b5d] hover:text-[#0B294b] hover:bg-[#e7ebed]"
+                  className="text-xs text-slate-300 hover:text-white hover:bg-slate-700"
                 >
                   <LogOut className="mr-1 h-3 w-3" />
                   Sign out and start over
@@ -597,7 +606,7 @@ export default function Register() {
                 Already have an account?{" "}
                 <button
                   onClick={() => navigate("/login")}
-                  className="text-[#2b8ac4] font-medium hover:text-[#46b7d7] hover:underline transition-colors"
+                  className="text-white font-medium hover:text-emerald-400 hover:underline transition-colors"
                 >
                   Sign in
                 </button>

@@ -32,7 +32,7 @@ const ADMIN_TAB_PERMISSION = 'tab.admin.view';
  * This ensures users are authenticated and can only access admin sections they have permission to view
  */
 export const ProtectedAdminTabRoute: React.FC<ProtectedAdminTabRouteProps> = ({ children }) => {
-  const { user, loading: authLoading, isPasswordRecovery } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { can, loading: permissionsLoading } = usePermissions();
   const { currentWorkspace } = useWorkspace();
   const params = useParams<{ section?: string }>();
@@ -69,9 +69,6 @@ export const ProtectedAdminTabRoute: React.FC<ProtectedAdminTabRouteProps> = ({ 
 
   // Check permissions and redirect if necessary
   useEffect(() => {
-    if (isPasswordRecovery) {
-      return;
-    }
     // Wait for auth and permissions to load
     if (authLoading || permissionsLoading || !user) {
       return;
@@ -111,7 +108,6 @@ export const ProtectedAdminTabRoute: React.FC<ProtectedAdminTabRouteProps> = ({ 
       }
     }
   }, [
-    isPasswordRecovery,
     params.section,
     authLoading,
     permissionsLoading,
@@ -126,25 +122,19 @@ export const ProtectedAdminTabRoute: React.FC<ProtectedAdminTabRouteProps> = ({ 
   // Show loading while checking auth/permissions
   if (authLoading || permissionsLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-slate-600">Loading...</div>
       </div>
     );
   }
 
   // Redirect to login if not authenticated
-
-if (!user && !isPasswordRecovery) {
-  return <Navigate to="/" replace />;
-}
-
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
 
   // Check if user has admin tab access
   if (!can(ADMIN_TAB_PERMISSION)) {
-    // Don't redirect if in password recovery - send them to reset-password
-    if (isPasswordRecovery) {
-      return <Navigate to="/reset-password" replace />;
-    }
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -152,10 +142,6 @@ if (!user && !isPasswordRecovery) {
   if (params.section) {
     const requestedSection = params.section.toLowerCase();
     if (!isSectionVisible(requestedSection)) {
-      // Don't redirect if in password recovery
-      if (isPasswordRecovery) {
-        return <Navigate to="/reset-password" replace />;
-      }
       // User doesn't have permission for this specific section
       // Redirect will be handled by useEffect, but we can show a loading state
       const firstVisibleSection = getFirstVisibleSection();

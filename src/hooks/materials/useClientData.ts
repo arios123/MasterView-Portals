@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/utils/demoMode';
 
 export function useClientData(clientId: string | undefined) {
   const [clientData, setClientData] = useState<any>(null);
@@ -8,6 +9,10 @@ export function useClientData(clientId: string | undefined) {
   useEffect(() => {
     const fetchClientData = async () => {
       if (!clientId) {
+        setClientData(null);
+        return;
+      }
+      if (isDemoMode()) {
         setClientData(null);
         return;
       }

@@ -40,7 +40,7 @@ export function QuoteSummary({
   const timeframeReadOnly = readOnly || !canEditTimeframe;
   const { taxRate } = useWorkspaceTaxRate();
   const taxRatePercent = (taxRate * 100).toFixed(2);
-  
+
   return (
     <div className="space-y-3">
       <div className="text-sm space-y-1">

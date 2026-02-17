@@ -2,15 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LookbookItem } from '@/types/lookbook';
-import { logInsert, logDelete } from '@/lib/auditLog';
-import { useAuth } from '@/contexts/AuthContext';
 
 export function useLookbookSelections(projectId: string, workspaceId: string | undefined) {
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [likedItems, setLikedItems] = useState<LookbookItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
 
   // Load project-specific selections from database
   useEffect(() => {
@@ -78,15 +75,6 @@ export function useLookbookSelections(projectId: string, workspaceId: string | u
 
     try {
       if (isSelected) {
-        // Fetch before data for audit log
-        const { data: beforeData } = await (supabase as any)
-          .from('project_lookbook_selections')
-          .select('*')
-          .eq('project_id', projectId)
-          .eq('lookbook_option_id', item.id)
-          .eq('workspace_id', workspaceId)
-          .maybeSingle();
-
         // Remove from database
         const { error } = await (supabase as any)
           .from('project_lookbook_selections')
@@ -97,11 +85,6 @@ export function useLookbookSelections(projectId: string, workspaceId: string | u
 
         if (error) throw error;
 
-        // Log audit event for lookbook item unlike
-        if (workspaceId && user && beforeData) {
-          await logDelete(workspaceId, user.id, 'project_lookbook_selections', beforeData.id, beforeData, 'LookBook');
-        }
-
         setSelectedItemIds((prev) => {
           const newSet = new Set(prev);
           newSet.delete(item.id!);
@@ -110,22 +93,15 @@ export function useLookbookSelections(projectId: string, workspaceId: string | u
         setLikedItems((prev) => prev.filter((liked) => liked.id !== item.id));
       } else {
         // Add to database
-        const { data, error } = await (supabase as any)
+        const { error } = await (supabase as any)
           .from('project_lookbook_selections')
           .insert({
             project_id: projectId,
             lookbook_option_id: item.id,
             workspace_id: workspaceId,
-          })
-          .select()
-          .single();
+          });
 
         if (error) throw error;
-
-        // Log audit event for lookbook item like
-        if (workspaceId && user && data) {
-          await logInsert(workspaceId, user.id, 'project_lookbook_selections', data.id, data, 'LookBook');
-        }
 
         setSelectedItemIds((prev) => new Set(prev).add(item.id!));
         setLikedItems((prev) => [...prev, item]);

@@ -137,13 +137,10 @@ export function EventPreviewDialog({
         <div className="space-y-4 p-4">
           {!isEditMode ? (
             <div className="grid grid-cols-2 gap-4">
-              {/* 1. Title */}
               <div className="col-span-2">
                 <label className="text-sm font-medium text-muted-foreground">Title</label>
-                <p className="text-base font-semibold">{event.title}</p>
+                <p className="text-base font-semibold">{event.title || 'Untitled Event'}</p>
               </div>
-              
-              {/* 2. Date & Time */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Date</label>
                 <p className="text-base">{new Date(event.date).toLocaleDateString()}</p>
@@ -152,8 +149,6 @@ export function EventPreviewDialog({
                 <label className="text-sm font-medium text-muted-foreground">Time</label>
                 <p className="text-base">{event.time}</p>
               </div>
-              
-              {/* 3. Event Type (Optional) */}
               {event.appointmentTypeId && (
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">Event Type</label>
@@ -162,8 +157,6 @@ export function EventPreviewDialog({
                   </p>
                 </div>
               )}
-              
-              {/* 4. Attendees */}
               {(event as EventItemWithAccountability).attendees && (event as EventItemWithAccountability).attendees!.length > 0 && (
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">Attendees</label>
@@ -176,32 +169,24 @@ export function EventPreviewDialog({
                   </ul>
                 </div>
               )}
-              
-              {/* 5. Client (Optional) */}
               {event.clientName && (
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">Client</label>
                   <p className="text-base">{event.clientName}</p>
                 </div>
               )}
-              
-              {/* 6. Project Type (Optional) */}
               {event.projectType && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Project Type</label>
                   <p className="text-base">{event.projectType}</p>
                 </div>
               )}
-              
-              {/* 7. Address (Optional) */}
               {event.address && (
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">Address</label>
                   <p className="text-base">{event.address}</p>
                 </div>
               )}
-              
-              {/* Accountability Info */}
               <div className="col-span-2 flex items-center justify-start pt-2 border-t">
                 <AccountabilityInfo
                   created_by={(event as EventItemWithAccountability).created_by}
@@ -213,7 +198,6 @@ export function EventPreviewDialog({
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Edit Mode */}
               <TitleInput
                 value={editForm.title}
                 onChange={(v) => setEditForm((f) => ({ ...f, title: v }))}
@@ -342,3 +326,4 @@ export function EventPreviewDialog({
     </Dialog>
   );
 }
+

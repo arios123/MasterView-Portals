@@ -49,7 +49,7 @@ export const NewClientDialog = ({
   const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -165,18 +165,14 @@ export const NewClientDialog = ({
         email: formData.email.trim() || undefined,
       }, user.id);
 
-      // Create client assignment if a member is selected (single assignment only)
-      if (selectedMemberId) {
-        // First, get the workspace_member_id from the selected member
-        const selectedMember = workspaceMembers.find(m => m.id === selectedMemberId);
-        if (selectedMember) {
-          await createClientAssignments(
-            workspaceId,
-            newClient.client_id,
-            [selectedMemberId],
-            user.id
-          );
-        }
+      // Create client assignments if any members are selected
+      if (selectedMemberIds.length > 0) {
+        await createClientAssignments(
+          workspaceId,
+          newClient.client_id,
+          selectedMemberIds,
+          user.id
+        );
       }
 
       toast({
@@ -186,7 +182,7 @@ export const NewClientDialog = ({
 
       // Reset form and close dialog
       setFormData({ name: "", phone: "", email: "" });
-      setSelectedMemberId("");
+      setSelectedMemberIds([]);
       setOpen(false);
 
       // Notify parent that client was created
@@ -244,20 +240,50 @@ export const NewClientDialog = ({
           <div className="space-y-2">
             <Label htmlFor="assignedStaff">Assigned Staff (Optional)</Label>
             <Select
-              value={selectedMemberId}
-              onValueChange={(value) => setSelectedMemberId(value)}
+              value={selectedMemberIds.length > 0 ? selectedMemberIds[0] : ""}
+              onValueChange={(value) => {
+                if (value && !selectedMemberIds.includes(value)) {
+                  setSelectedMemberIds([...selectedMemberIds, value]);
+                }
+              }}
             >
               <SelectTrigger id="assignedStaff">
-                <SelectValue placeholder="Select a staff member..." />
+                <SelectValue placeholder="Select staff members..." />
               </SelectTrigger>
               <SelectContent>
-                {workspaceMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.name || member.email || "Unknown"}
-                  </SelectItem>
-                ))}
+                {workspaceMembers
+                  .filter(member => !selectedMemberIds.includes(member.id))
+                  .map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name || member.email || "Unknown"}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
+            {selectedMemberIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedMemberIds.map((memberId) => {
+                  const member = workspaceMembers.find(m => m.id === memberId);
+                  return (
+                    <div
+                      key={memberId}
+                      className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-md text-sm"
+                    >
+                      <span>{member?.name || member?.email || "Unknown"}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberIds(selectedMemberIds.filter(id => id !== memberId));
+                        }}
+                        className="ml-1 text-slate-500 hover:text-slate-700"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -284,7 +310,7 @@ export const NewClientDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2" data-onboarding-highlight="add-client-button">
+        <Button className="gap-2">
           <UserPlus className="h-4 w-4" />
           New Client
         </Button>

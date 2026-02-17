@@ -1,15 +1,17 @@
 import { LineItem } from '@/types';
 
-export function calculateContractTotal(items: LineItem[], multiplier: number, taxRate: number = 0.06): number {
+const TAX_RATE = 0.06;
+
+export function calculateContractTotal(items: LineItem[], multiplier: number): number {
   const labor = items.filter((i) => i.kind === 'labor').reduce((a, i) => a + i.qty * i.unitPrice, 0);
   const mats = items
     .filter((i) => i.kind === 'material')
     .reduce((a, i) => a + i.qty * (1 + ((i.wastePct || 0) / 100)) * i.unitPrice, 0);
-  const tax = mats * taxRate;
+  const tax = mats * TAX_RATE;
   return (labor + mats + tax) * multiplier;
 }
 
-export function calculateChangeOrderTotal(items: LineItem[], multiplier: number, taxRate: number = 0.06): string {
+export function calculateChangeOrderTotal(items: LineItem[], multiplier: number): string {
   const laborTotal = items
     .filter((item) => item.kind === 'labor')
     .reduce((sum, item) => {
@@ -28,7 +30,7 @@ export function calculateChangeOrderTotal(items: LineItem[], multiplier: number,
       return sum + qtyWithWaste * price;
     }, 0);
 
-  const materialTax = materialTotal * taxRate;
+  const materialTax = materialTotal * TAX_RATE;
   const subtotal = laborTotal + materialTotal + materialTax;
   const grandTotal = subtotal * multiplier;
 

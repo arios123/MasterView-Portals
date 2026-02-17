@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ChangeOrder, Item } from '@/types/materials';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockVersionMaterials } from '@/utils/mockData';
 
 export interface UseChangeOrdersDataOptions {
   /** Sold contract (active version materials). When set, itemsA = sold contract + this CO's version_materials deltas (quantity is delta in DB). */
@@ -27,6 +29,67 @@ export function useChangeOrdersData(
         return;
       }
 
+      if (isDemoMode()) {
+        setLoading(true);
+        try {
+          const allMockMaterials = getMockVersionMaterials();
+          const changeOrdersData: ChangeOrder[] = activeChangeOrders.map((co) => {
+            const materialData = allMockMaterials.filter((vm: any) => vm.version_id === co.version_id);
+            let itemsA: Item[];
+            let soldContractTotal: number | undefined;
+
+            if (soldContractMaterials !== undefined) {
+              soldContractTotal = soldContractMaterials.reduce((sum, i) => sum + i.qty * i.price, 0);
+              const soldMap = new Map(soldContractMaterials.map((i) => [i.id, { ...i }]));
+              const newItems: Item[] = [];
+
+              for (const row of materialData) {
+                const qty = Number(row.quantity);
+                const price = Number(row.price);
+                const name = (row.item_name?.trim() || 'Unknown') as string;
+                const baselineId = (row as any).baseline_version_material_id ?? null;
+
+                if (baselineId != null) {
+                  const sold = soldMap.get(baselineId);
+                  if (sold) {
+                    sold.qty = sold.qty + qty;
+                    sold.price = price;
+                    sold.name = name;
+                  } else {
+                    newItems.push({ id: row.id, name, qty, price });
+                  }
+                } else {
+                  newItems.push({ id: row.id, name, qty, price });
+                }
+              }
+
+              itemsA = [...soldContractMaterials.map((s) => soldMap.get(s.id)!), ...newItems];
+            } else {
+              itemsA = materialData.map((item: any) => ({
+                id: item.id,
+                name: item.item_name || 'Unknown',
+                qty: Number(item.quantity),
+                price: Number(item.price),
+              }));
+            }
+
+            return {
+              id: co.version_id,
+              title: co.name || 'Change Order',
+              itemsA,
+              itemsB: [],
+              soldContractTotal,
+            };
+          });
+          setChangeOrders(changeOrdersData);
+        } catch (error) {
+          console.error('Error loading change orders (demo):', error);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
       try {
         const changeOrdersData = await Promise.all(
@@ -40,12 +103,10 @@ export function useChangeOrdersData(
             let soldContractTotal: number | undefined;
             if (soldContractMaterials !== undefined) {
               soldContractTotal = soldContractMaterials.reduce((sum, i) => sum + i.qty * i.price, 0);
-              // Start with a copy of the full sold contract
               const soldMap = new Map(soldContractMaterials.map((i) => [i.id, { ...i }]));
               const coveredSoldIds = new Set<string>();
               const newItems: Item[] = [];
 
-              // Apply deltas from this CO's version_materials on top
               for (const row of materialData || []) {
                 const qty = Number(row.quantity);
                 const price = Number(row.price);
@@ -55,22 +116,18 @@ export function useChangeOrdersData(
                 if (baselineId != null) {
                   const sold = soldMap.get(baselineId);
                   if (sold) {
-                    // Apply delta: qty is delta (sold.qty + delta), price is absolute
                     sold.qty = sold.qty + qty;
                     sold.price = price;
                     sold.name = name;
                     coveredSoldIds.add(baselineId);
                   } else {
-                    // Baseline ref doesn't match a sold item — include as-is
                     newItems.push({ id: row.id, name, qty, price });
                   }
                 } else {
-                  // New item added by this CO (no baseline link)
                   newItems.push({ id: row.id, name, qty, price });
                 }
               }
 
-              // Build itemsA: all sold contract items (with deltas applied where applicable) + new items
               itemsA = [...soldContractMaterials.map((s) => soldMap.get(s.id)!), ...newItems];
             } else {
               itemsA = (materialData || []).map((item: any) => ({
@@ -104,4 +161,3 @@ export function useChangeOrdersData(
 
   return { changeOrders, loading };
 }
-

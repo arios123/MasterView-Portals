@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockProjectStatuses } from '@/utils/mockData';
 
 export type ProjectStatus = {
   id: string;
@@ -16,6 +18,11 @@ export type ProjectStatus = {
 export const projectStatusesQueries = {
   // Fetch all project statuses for a workspace
   async getByWorkspace(workspaceId: string): Promise<ProjectStatus[]> {
+    if (isDemoMode()) {
+      return getMockProjectStatuses();
+    }
+
+    // COMMENTED OUT IN DEMO MODE - using mock data instead
     const { data, error } = await supabase
       .from('project_statuses')
       .select('*')

@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useProjectStatuses } from "@/hooks/useProjectStatuses";
 import { projectStatusesQueries } from "@/queries/projectStatuses";
+import { fetchClientProjects as fetchClientProjectsQuery } from "@/queries/projects";
+import { fetchClientById } from "@/queries/clients";
+import { isDemoMode } from "@/utils/demoMode";
+import { getMockUserRecord } from "@/utils/mockData";
 import { Can } from "@/components/Can";
 import { Project } from "@/types";
 import { Loader2, Plus } from "lucide-react";
@@ -22,10 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createProjectCrewAssignments } from "@/queries/projectCrewAssignments";
-import { useProjectCrewAssignments } from "@/hooks/activity/useProjectCrewAssignments";
-import { usePrice } from "@/contexts/PriceContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -45,7 +44,6 @@ interface DbProject {
   project_type: string | null;
   address: string | null;
   notes: string | null;
-  quick_note: string | null;
   status: string;
   created_at: string;
   active_version?: string | null;
@@ -75,7 +73,6 @@ type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 export function ProjectsTab({ currentProject, onProjectChange, readOnly = false }: ProjectsTabProps) {
   const { currentWorkspace } = useWorkspace();
-  const { user } = useAuth();
   const workspaceId = currentWorkspace?.id;
   const { projectStatuses } = useProjectStatuses(workspaceId);
   
@@ -88,9 +85,6 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projectCosts, setProjectCosts] = useState<ProjectCost[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [workspaceMembers, setWorkspaceMembers] = useState<Array<{ id: string; name: string | null; email: string | null }>>([]);
-  const [selectedCrewMemberIds, setSelectedCrewMemberIds] = useState<string[]>([]);
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
   // Permission checks
   const canViewAddProject = can('component.clientprojects_addproject.view');
@@ -98,7 +92,6 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
   const canViewSetActive = can('component.clientprojects_setactive.view');
   const canEditSetActive = can('component.clientprojects_setactive.edit');
   const canViewPrices = can('component.clientprojects_viewprices.view');
-  const { hidden } = usePrice();
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -114,44 +107,8 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
     if (workspaceId && currentProject.clientId) {
       fetchClientProjects();
       fetchActiveProject();
-      fetchWorkspaceMembers();
     }
   }, [currentProject.clientId, workspaceId]);
-
-  const fetchWorkspaceMembers = async () => {
-    if (!workspaceId) return;
-
-    try {
-      const { data: membersData, error: membersError } = await (supabase as any)
-        .from("workspace_members")
-        .select("id, user_id")
-        .eq("workspace_id", workspaceId);
-
-      if (membersError) throw membersError;
-      if (!membersData || membersData.length === 0) return;
-
-      const userIds = membersData.map((m: any) => m.user_id).filter(Boolean);
-      if (userIds.length === 0) return;
-
-      const { data: usersData, error: usersError } = await (supabase as any)
-        .from("users")
-        .select("user_id, name, email")
-        .in("user_id", userIds);
-
-      if (usersError) throw usersError;
-
-      const membersMap = new Map(membersData.map((m: any) => [m.user_id, m.id]));
-      const members = (usersData || []).map((u: any) => ({
-        id: membersMap.get(u.user_id) || '',
-        name: u.name,
-        email: u.email,
-      }));
-
-      setWorkspaceMembers(members);
-    } catch (error) {
-      console.error('Error fetching workspace members:', error);
-    }
-  };
 
   useEffect(() => {
     // Only calculate project costs if user has permission to view prices
@@ -166,7 +123,21 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
   const fetchActiveProject = async () => {
     if (!currentProject.clientId || !workspaceId) return;
 
+    if (isDemoMode()) {
+      // In demo mode, get active project from mock clients
+      try {
+        const { getMockClients } = await import('@/utils/mockData');
+        const mockClients = getMockClients();
+        const client = mockClients.find(c => c.client_id === currentProject.clientId);
+        setActiveProjectId(client?.active_project || null);
+      } catch (error) {
+        console.error('Error fetching active project:', error);
+      }
+      return;
+    }
+
     try {
+      // COMMENTED OUT IN DEMO MODE - using mock data instead
       const { data, error } = await (supabase as any)
         .from('clients')
         .select('active_project')
@@ -190,14 +161,7 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
 
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from('projects')
-        .select('*')
-        .eq('client_id', currentProject.clientId)
-        .eq('workspace_id', workspaceId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchClientProjectsQuery(currentProject.clientId, workspaceId);
 
       // Fetch assigned user names for each project (same pattern as useAssignedUser hook)
       const projectsWithUsers = await Promise.all(
@@ -206,7 +170,16 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
             return { ...project, assignedUserName: 'Unassigned' };
           }
 
+          if (isDemoMode()) {
+            const mockUser = getMockUserRecord();
+            return {
+              ...project,
+              assignedUserName: mockUser.name || 'Demo User'
+            };
+          }
+
           try {
+            // COMMENTED OUT IN DEMO MODE - using mock data instead
             const { data: userData, error: userError } = await (supabase as any)
               .from('users')
               .select('name')
@@ -232,12 +205,20 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
       setProjects(projectsWithUsers);
     } catch (error) {
       console.error('Error fetching client projects:', error);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
   const calculateProjectCosts = async () => {
+    if (isDemoMode()) {
+      // In demo mode, return mock costs
+      setProjectCosts(projects.map(proj => ({ projectId: proj.project_id, totalCost: 0 })));
+      return;
+    }
+
+    // COMMENTED OUT IN DEMO MODE - using mock data instead
     const results = await Promise.all(projects.map(async (proj) => {
       try {
         const { data, error } = await supabase.functions.invoke('project-total', {
@@ -328,38 +309,6 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
 
       if (insertError) throw insertError;
 
-      // Copy default questions to project
-      try {
-        const { error: copyError } = await (supabase as any)
-          .rpc('copy_default_questions_to_project', {
-            p_workspace_id: workspaceId,
-            p_project_id: newProject.project_id,
-            p_created_by: user?.id,
-          });
-        if (copyError) {
-          console.error('Error copying default questions to project:', copyError);
-          // Don't fail the whole operation if this fails
-        }
-      } catch (error) {
-        console.error('Error copying default questions to project:', error);
-        // Don't fail the whole operation if this fails
-      }
-
-      // Create crew assignments if any members are selected
-      if (selectedCrewMemberIds.length > 0 && workspaceId) {
-        try {
-          await createProjectCrewAssignments(
-            workspaceId,
-            newProject.project_id,
-            selectedCrewMemberIds,
-            user?.id
-          );
-        } catch (error) {
-          console.error('Error creating crew assignments:', error);
-          // Don't fail the whole operation if this fails
-        }
-      }
-
       // Automatically set the new project as active for this client
       // Check if client currently has no active project, or if user has permission to set active
       if (canEditSetActive || !activeProjectId) {
@@ -385,7 +334,6 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
       toast.success("Project created successfully!");
       setIsDialogOpen(false);
       form.reset();
-      setSelectedCrewMemberIds([]);
       fetchClientProjects();
       
       // Notify parent to reload if callback is provided
@@ -487,54 +435,6 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
                         </FormItem>
                       )}
                     />
-                    <div className="space-y-2">
-                      <Label>Crew (Optional)</Label>
-                      <Select
-                        value=""
-                        onValueChange={(value) => {
-                          if (value && !selectedCrewMemberIds.includes(value)) {
-                            setSelectedCrewMemberIds([...selectedCrewMemberIds, value]);
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select crew members..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {workspaceMembers
-                            .filter(member => !selectedCrewMemberIds.includes(member.id))
-                            .map((member) => (
-                              <SelectItem key={member.id} value={member.id}>
-                                {member.name || member.email || "Unknown"}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      {selectedCrewMemberIds.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {selectedCrewMemberIds.map((memberId) => {
-                            const member = workspaceMembers.find(m => m.id === memberId);
-                            return (
-                              <div
-                                key={memberId}
-                                className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-md text-sm"
-                              >
-                                <span>{member?.name || member?.email || "Unknown"}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedCrewMemberIds(selectedCrewMemberIds.filter(id => id !== memberId));
-                                  }}
-                                  className="ml-1 text-slate-500 hover:text-slate-700"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
                     <div className="flex justify-end gap-2">
                       <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Cancel
@@ -600,8 +500,17 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
                       <span className="font-medium">Address:</span> {proj.address}
                     </div>
                   )}
-                  <ProjectCrewManagement projectId={proj.project_id} />
-                  {canViewPrices && !hidden && projectCost && (
+                  {proj.assignedUserName && (
+                    <div className="text-sm">
+                      <span className="font-medium">Assigned To:</span> {proj.assignedUserName}
+                    </div>
+                  )}
+                  {proj.notes && (
+                    <div className="text-sm">
+                      <span className="font-medium">Notes:</span> {proj.notes}
+                    </div>
+                  )}
+                  {canViewPrices && projectCost && (
                     <div className="text-sm font-semibold text-primary">
                       <span className="font-medium">Total Cost:</span> {projectCost.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                     </div>
@@ -623,31 +532,6 @@ export function ProjectsTab({ currentProject, onProjectChange, readOnly = false 
             );
           })}
         </div>
-      )}
-    </div>
-  );
-}
-
-// Component to display crew for an existing project (read-only, no manage button)
-function ProjectCrewManagement({ 
-  projectId, 
-}: { 
-  projectId: string; 
-}) {
-  const {
-    crewMembers,
-    loading,
-  } = useProjectCrewAssignments(projectId);
-
-  return (
-    <div className="text-sm">
-      <span className="font-medium">Crew:</span>{" "}
-      {loading ? (
-        <span className="text-muted-foreground">Loading...</span>
-      ) : crewMembers.length > 0 ? (
-        <span>{crewMembers.map(m => m.name || m.email || "Unknown").join(", ")}</span>
-      ) : (
-        <span className="text-muted-foreground">No crew assigned</span>
       )}
     </div>
   );

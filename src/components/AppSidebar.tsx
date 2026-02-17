@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { isDemoMode } from "@/utils/demoMode";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,8 +67,13 @@ export function AppSidebar({ activeTab, onTabChange, availableTabs }: AppSidebar
     return true;
   });
 
+  // Add top padding in demo mode to account for the demo banner
+  const sidebarClassName = isDemoMode() 
+    ? "border-r pt-[44px]" 
+    : "border-r";
+
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    <Sidebar collapsible="icon" className={sidebarClassName}>
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
@@ -123,7 +129,6 @@ export function AppSidebar({ activeTab, onTabChange, availableTabs }: AppSidebar
                       onClick={() => onTabChange(tab)}
                       isActive={isActive}
                       tooltip={isCollapsed ? tab : undefined}
-                      data-onboarding-highlight={tab === 'Projects' ? 'projects-tab' : tab === 'Admin' ? 'admin-tab' : undefined}
                     >
                       {Icon && <Icon className="h-4 w-4" />}
                       <span>{tab}</span>

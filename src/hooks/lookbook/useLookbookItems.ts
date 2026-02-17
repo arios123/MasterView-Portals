@@ -26,7 +26,7 @@ export function useLookbookItems(workspaceId: string | undefined) {
         if (data) {
           const transformedItems: LookbookItem[] = data.map((item) => ({
             id: item.id,
-            title: item.title || item.style,
+            title: item.style,
             brand: item.brand,
             link: item.link || '',
             finish: item.finish,

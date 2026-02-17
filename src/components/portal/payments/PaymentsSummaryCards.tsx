@@ -42,7 +42,7 @@ export function PaymentsSummaryCards({
       <SummaryCard title="Change Orders Total" amount={changeOrdersTotal} />
       <SummaryCard title="Total Paid" amount={paidTotal} />
       <SummaryCard title="Balance" amount={balance} />
-      {/* Next Payment card - commented out
+      {/* Next Payment card - not shown in main
       <SummaryCard title="Next Payment" amount={nextPayment} />
       */}
     </div>

@@ -18,7 +18,6 @@ interface DocumentGenerationFormProps {
   changeOrders: DocumentChangeOrder[];
   canGenerate: boolean;
   isGenerating: boolean;
-  changeOrderError?: string | null;
 }
 
 export function DocumentGenerationForm({
@@ -34,7 +33,6 @@ export function DocumentGenerationForm({
   changeOrders,
   canGenerate,
   isGenerating,
-  changeOrderError,
 }: DocumentGenerationFormProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -72,47 +70,40 @@ export function DocumentGenerationForm({
         </Button>
       </div>
 
-      {/* Change Order Selection Dropdown - Always visible */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3">
-        <label className="text-sm font-medium md:w-[280px]">Change Order:</label>
-        <Select 
-          value={selectedChangeOrderId || undefined} 
-          onValueChange={(value) => onChangeOrderSelect(value || '')} 
-          disabled={!canGenerate || isGenerating}
-        >
-          <SelectTrigger className="w-full md:flex-1">
-            <SelectValue placeholder="Select a change order (optional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {changeOrders.length === 0 ? (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">No change orders found</div>
-            ) : (
-              changeOrders.map((co) => {
-                let displayName = co.name || co.status;
-                if (!displayName && co.created_at) {
-                  try {
-                    displayName = `Change Order ${format(new Date(co.created_at), 'MM/dd/yyyy')}`;
-                  } catch (e) {
+      {/* Change Order Selection Dropdown - On its own line, above generate button on mobile */}
+      {requiresChangeOrder && (
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <label className="text-sm font-medium md:w-[280px]">Change Order:</label>
+          <Select value={selectedChangeOrderId} onValueChange={onChangeOrderSelect} disabled={!canGenerate || isGenerating}>
+            <SelectTrigger className="w-full md:flex-1">
+              <SelectValue placeholder="Select a change order" />
+            </SelectTrigger>
+            <SelectContent>
+              {changeOrders.length === 0 ? (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">No change orders found</div>
+              ) : (
+                changeOrders.map((co) => {
+                  let displayName = co.name || co.status;
+                  if (!displayName && co.created_at) {
+                    try {
+                      displayName = `Change Order ${format(new Date(co.created_at), 'MM/dd/yyyy')}`;
+                    } catch (e) {
+                      displayName = `Change Order ${co.version_id.slice(0, 8)}`;
+                    }
+                  }
+                  if (!displayName) {
                     displayName = `Change Order ${co.version_id.slice(0, 8)}`;
                   }
-                }
-                if (!displayName) {
-                  displayName = `Change Order ${co.version_id.slice(0, 8)}`;
-                }
-                return (
-                  <SelectItem key={co.version_id} value={co.version_id}>
-                    {displayName}
-                  </SelectItem>
-                );
-              })
-            )}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      {/* Error message if change order is required but not selected */}
-      {changeOrderError && (
-        <div className="text-sm text-destructive">{changeOrderError}</div>
+                  return (
+                    <SelectItem key={co.version_id} value={co.version_id}>
+                      {displayName}
+                    </SelectItem>
+                  );
+                })
+              )}
+            </SelectContent>
+          </Select>
+        </div>
       )}
 
       {/* Mobile: Generate button below change order */}

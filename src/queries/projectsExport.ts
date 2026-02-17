@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getMaterialsTaxRate } from './workspaces';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockDbProjects, getMockClients } from '@/utils/mockData';
 
 export type ProjectExportRow = {
   project_name: string;
@@ -102,9 +104,10 @@ async function calculateProjectTotalsBreakdown(
     .from('payments')
     .select('amount')
     .eq('project_id', projectId)
+    .eq('type', 'I')
     .eq('workspace_id', workspaceId);
 
-  totalPaid = (payments || []).reduce((sum: number, payment: any) => sum + (Number(payment.amount) || 0), 0);
+  totalPaid = (payments || []).reduce((sum: number, payment: any) => sum + payment.amount, 0);
 
   return { contractTotal, changeOrdersTotal, totalCost, totalPaid };
 }
@@ -113,6 +116,33 @@ async function calculateProjectTotalsBreakdown(
  * Fetch all projects for a workspace for CSV export.
  */
 export const fetchAllProjectsForExport = async (workspaceId: string): Promise<ProjectExportRow[]> => {
+  if (isDemoMode()) {
+    const projects = getMockDbProjects();
+    const clients = getMockClients();
+    const clientMap = new Map(clients.map((c: any) => [c.client_id, c]));
+    return projects.slice(0, 10).map((p: any, idx: number) => {
+      const client = clientMap.get(p.client_id);
+      const total = 50000 + (idx + 1) * 8000;
+      const paid = Math.round(total * 0.3);
+      return {
+        project_name: p.name || '',
+        project_type: p.project_type || '',
+        address: p.address || '',
+        client_name: client?.name ?? '',
+        client_phone: client?.phone ?? '',
+        client_email: client?.email ?? '',
+        notes: p.notes || '',
+        quick_notes: p.quick_note || '',
+        status: p.status || '',
+        project_total: String(total),
+        contract_total: String(Math.round(total * 0.9)),
+        change_orders: String(Math.round(total * 0.1)),
+        total_paid: String(paid),
+        balance: String(total - paid),
+      };
+    });
+  }
+
   const { data: projects, error: projectsError } = await (supabase as any)
     .from('projects')
     .select('project_id, name, project_type, address, notes, quick_note, status, client_id')

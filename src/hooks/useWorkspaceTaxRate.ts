@@ -10,19 +10,17 @@ import { useAuth } from '@/contexts/AuthContext';
 export function useWorkspaceTaxRate() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
-  const [taxRate, setTaxRate] = useState<number>(0.06); // Default to 6%
+  const [taxRate, setTaxRate] = useState<number>(0.06);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Fetch tax rate when workspace changes
   useEffect(() => {
     const fetchTaxRate = async () => {
       if (!currentWorkspace?.id) {
-        setTaxRate(0.06); // Default
+        setTaxRate(0.06);
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
         setError(null);
@@ -31,12 +29,11 @@ export function useWorkspaceTaxRate() {
       } catch (err) {
         console.error('Error fetching tax rate:', err);
         setError(err as Error);
-        setTaxRate(0.06); // Fallback to default
+        setTaxRate(0.06);
       } finally {
         setLoading(false);
       }
     };
-
     fetchTaxRate();
   }, [currentWorkspace?.id]);
 
@@ -44,7 +41,6 @@ export function useWorkspaceTaxRate() {
     if (!currentWorkspace?.id || !user?.id) {
       throw new Error('Workspace or user not available');
     }
-
     try {
       setError(null);
       await updateMaterialsTaxRate(currentWorkspace.id, newRate, user.id);

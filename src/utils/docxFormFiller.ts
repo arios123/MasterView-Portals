@@ -13,95 +13,18 @@ export interface DocxTemplateData {
   QuoteNo?: string;
   StartDate?: string;
   Weeks?: string;
-  Multiplier?: string;
 
-  // Client fields (camelCase matching template)
-  ClientName?: string;
-  ClientEmail?: string;
-  ClientPhoneNumber?: string;
-
-  // Assigned staff fields
-  AssignedStaffName?: string;
-  AssignedStaffEmail?: string;
-
-  // Project fields
-  ProjectTitle?: string;
-  ProjectType?: string;
-  ProjectAddress?: string;
-  ProjectStatus?: string;
-  QuickNotes?: string;
-  Notes?: string;
+  // Customer fields (camelCase matching template)
+  CustomerName?: string;
+  CustomerAddress?: string;
+  CustomerEmail?: string;
+  CustomerPhoneNumber?: string;
 
   // Financial/Labor fields
-  Labor?: Array<any>; // Labor items from version_labor (compound macro)
+  Labor?: string;
   Materials?: string | Array<any>; // Can be string or array for nested loops
-  ProjectMaterials?: Array<any>; // Materials from version_materials (compound macro)
-  ChangeOrderProjectMaterials?: Array<{
-    // Before (baseline)
-    ChangeOrderProjectMaterialsTitleB: string;
-    ChangeOrderProjectMaterialsQtyB: string;
-    ChangeOrderProjectMaterialsPriceB: string;
-    ChangeOrderProjectMaterialsTotalB: string;
-    // After (CO result)
-    ChangeOrderProjectMaterialsTitleA: string;
-    ChangeOrderProjectMaterialsQtyA: string;
-    ChangeOrderProjectMaterialsPriceA: string;
-    ChangeOrderProjectMaterialsTotalA: string;
-    // Delta (After − Before)
-    ChangeOrderProjectMaterialsQtyD: string;
-    ChangeOrderProjectMaterialsPriceD: string;
-    ChangeOrderProjectMaterialsTotalD: string;
-    // Change type
-    ChangeOrderProjectMaterialsChange: string;
-  }>; // Change order Before/After/Delta materials; Change = "Added"|"Modified"|"Removed"
-  ChangeOrderLabor?: Array<{
-    // Before (baseline)
-    ChangeOrderLaborTitleB: string;
-    ChangeOrderLaborQtyB: string;
-    ChangeOrderLaborPriceB: string;
-    ChangeOrderLaborTotalB: string;
-    // After (CO result)
-    ChangeOrderLaborTitleA: string;
-    ChangeOrderLaborQtyA: string;
-    ChangeOrderLaborPriceA: string;
-    ChangeOrderLaborTotalA: string;
-    // Delta (After − Before)
-    ChangeOrderLaborQtyD: string;
-    ChangeOrderLaborPriceD: string;
-    ChangeOrderLaborTotalD: string;
-    // Change type
-    ChangeOrderLaborChange: string;
-  }>; // Change order Before/After/Delta labor; Change = "Added"|"Modified"|"Removed"
-  ChangeOrderMaterials?: Array<{
-    ChangeOrderMaterialsLinkedTo: string;
-    ChangeOrderMaterialsTitle: string;
-    ChangeOrderMaterialsLink: string;
-    ChangeOrderMaterialsQuantity: number;
-    ChangeOrderMaterialsNotes: string;
-    ChangeOrderMaterialsPrice: string;
-    ChangeOrderMaterialsTotal: string;
-  }>; // Material revisions for the selected change order (same format as Materials but for the CO)
-  AssignedCrew?: Array<any>; // Crew members assigned to the project
-  LookbookQ?: Array<any>; // Lookbook questions and answers for the project
-  LookbookS?: Array<{
-    LookbookSCategory: string;
-    LookbookSTitle: string;
-    LookbookSBrand: string;
-    LookbookSStyle: string;
-    LookbookSFinish: string;
-    LookbookSLink: string;
-    LookbookSPrice: string;
-    LookbookSModel: string;
-    LookbookSCollection: string;
-  }>; // Liked/selected lookbook items for the project
-  IncomingPayments?: Array<any>; // Incoming payments for the project
-  OutgoingPayments?: Array<any>; // Outgoing payments for the project
-  ContractTotal?: string;
-  ChangeOrderTotal?: string; // Specific change order total
-  AllChangeOrderTotal?: string; // Cumulative total of all change orders
+  ProjectMaterials?: string; // Materials from version_materials (Qty: qty\tname format)
   ProjectTotal?: string;
-  TotalPaid?: string;
-  Balance?: string;
   PTTen?: string; // Project Total + 10%
 
   // Payment split fields
@@ -109,10 +32,10 @@ export interface DocxTemplateData {
   hasSecondPayment?: boolean;
   hasThirdPayment?: boolean;
   hasLastPayment?: boolean;
-  Payment1?: string; // First payment amount
-  Payment2?: string; // Second payment amount
-  Payment3?: string; // Third payment amount
-  Payment4?: string; // Last payment amount
+  p1?: string; // First payment amount
+  p2?: string; // Second payment amount
+  p3?: string; // Third payment amount
+  p4?: string; // Last payment amount
 
   // Add more fields as needed here
 }
@@ -156,24 +79,21 @@ async function fetchDocxTemplate(templatePath: string, workspaceId: string): Pro
  * Uses docxtemplater to replace placeholders like {Date}, {Customer_Name}, etc.
  */
 async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateData): Promise<Blob> {
-  // console.log("🔍 Starting fillDocxTemplate");
-  // console.log("📦 Template data received:", {
-  //   keys: Object.keys(templateData),
-  //   hasMaterials: 'Materials' in templateData,
-  //   materialsType: typeof templateData.Materials,
-  //   materialsIsArray: Array.isArray(templateData.Materials),
-  // });
-
-  // Log LookbookQ data specifically
-  console.log("📚 LookbookQ data:", templateData.LookbookQ);
+  console.log("🔍 Starting fillDocxTemplate");
+  console.log("📦 Template data received:", {
+    keys: Object.keys(templateData),
+    hasMaterials: 'Materials' in templateData,
+    materialsType: typeof templateData.Materials,
+    materialsIsArray: Array.isArray(templateData.Materials),
+  });
 
   // Convert blob to array buffer
   const arrayBuffer = await templateBlob.arrayBuffer();
-  // console.log("📦 Template blob converted to array buffer, size:", arrayBuffer.byteLength);
+  console.log("📦 Template blob converted to array buffer, size:", arrayBuffer.byteLength);
 
   // Load the docx file as binary content
   const zip = new PizZip(arrayBuffer);
-  // console.log("📦 ZIP loaded");
+  console.log("📦 ZIP loaded");
 
   // Debug: Check the actual XML content to see if tags are present
   try {
@@ -187,12 +107,12 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
       const openTagIndex = xmlContent.indexOf('{{#Materials}}');
       const closeTagIndex = xmlContent.indexOf('{{/Materials}}');
       
-      // console.log("🔍 Materials tag check:", {
-      //   hasOpenTag,
-      //   hasCloseTag,
-      //   openTagIndex,
-      //   closeTagIndex,
-      // });
+      console.log("🔍 Materials tag check:", {
+        hasOpenTag,
+        hasCloseTag,
+        openTagIndex,
+        closeTagIndex,
+      });
       
       // Find all instances of Materials tags
       const openTagMatches = xmlContent.match(/\{\{#Materials\}\}/g);
@@ -208,22 +128,22 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
         xmlContent.match(/\{\{\/M[^}]*/g),
       ];
       
-      // console.log("🔍 Materials tag matches:", {
-      //   openTagCount: openTagMatches?.length || 0,
-      //   closeTagCount: closeTagMatches?.length || 0,
-      //   truncatedCloseTag: truncatedCloseTag || [],
-      //   splitTagPatterns: splitTagPatterns.filter(p => p && p.length > 0),
-      // });
+      console.log("🔍 Materials tag matches:", {
+        openTagCount: openTagMatches?.length || 0,
+        closeTagCount: closeTagMatches?.length || 0,
+        truncatedCloseTag: truncatedCloseTag || [],
+        splitTagPatterns: splitTagPatterns.filter(p => p && p.length > 0),
+      });
       
       // Show context around the tags if found
       if (openTagIndex !== -1) {
         const openContext = xmlContent.substring(Math.max(0, openTagIndex - 100), Math.min(xmlContent.length, openTagIndex + 200));
-        // console.log("📄 Context around {{#Materials}}:", openContext);
+        console.log("📄 Context around {{#Materials}}:", openContext);
       }
       
       if (closeTagIndex !== -1) {
         const closeContext = xmlContent.substring(Math.max(0, closeTagIndex - 100), Math.min(xmlContent.length, closeTagIndex + 200));
-        // console.log("📄 Context around {{/Materials}}:", closeContext);
+        console.log("📄 Context around {{/Materials}}:", closeContext);
       } else {
         // Search for partial closing tags
         const partialCloseMatches = [
@@ -238,7 +158,7 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
         if (partialCloseMatches.length > 0) {
           const firstPartial = Math.min(...partialCloseMatches);
           const partialContext = xmlContent.substring(Math.max(0, firstPartial - 100), Math.min(xmlContent.length, firstPartial + 200));
-          // console.log("⚠️ Found partial closing tag at index", firstPartial, "Context:", partialContext);
+          console.log("⚠️ Found partial closing tag at index", firstPartial, "Context:", partialContext);
         }
       }
       
@@ -247,22 +167,22 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
       const splitPattern1 = xmlContent.match(/\{\{\/[^}]*\}\}/g);
       const materialsRelated = splitPattern1?.filter(tag => tag.toLowerCase().includes('mater'));
       if (materialsRelated && materialsRelated.length > 0) {
-        // console.log("⚠️ Found potential split or malformed Materials tags:", materialsRelated);
+        console.log("⚠️ Found potential split or malformed Materials tags:", materialsRelated);
       }
     }
   } catch (xmlError) {
-    // console.warn("⚠️ Could not inspect XML content:", xmlError);
+    console.warn("⚠️ Could not inspect XML content:", xmlError);
   }
 
   // Parse the template - this will throw an error if template is invalid
   let doc;
   try {
-    // console.log("🔍 Attempting to create Docxtemplater instance...");
+    console.log("🔍 Attempting to create Docxtemplater instance...");
     doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
     });
-    // console.log("✅ Docxtemplater instance created successfully");
+    console.log("✅ Docxtemplater instance created successfully");
   } catch (error: any) {
     console.error("❌ Error parsing template:", error);
     console.error("❌ Error details:", {
@@ -296,13 +216,13 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
 
   // Debug: Log all tags found in the template
   const tags = doc.getTags();
-  // console.log("📋 Template placeholders found:", tags);
-  // console.log("📋 Tags type:", typeof tags, Array.isArray(tags));
-  // console.log("📋 All tags (detailed):", JSON.stringify(tags, null, 2));
+  console.log("📋 Template placeholders found:", tags);
+  console.log("📋 Tags type:", typeof tags, Array.isArray(tags));
+  console.log("📋 All tags (detailed):", JSON.stringify(tags, null, 2));
   
   // Convert tags to array if it's not already an array
   const tagsArray = Array.isArray(tags) ? tags : (tags ? Object.values(tags) : []);
-  // console.log("📋 Tags as array:", tagsArray);
+  console.log("📋 Tags as array:", tagsArray);
   
   // Check specifically for Materials loop tags
   const materialsTags = tagsArray.filter((tag: any) => {
@@ -314,7 +234,7 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
     }
     return false;
   });
-  // console.log("📋 Materials-related tags found:", materialsTags);
+  console.log("📋 Materials-related tags found:", materialsTags);
   
   // Check for loop tags specifically
   const loopTags = tagsArray.filter((tag: any) => {
@@ -323,25 +243,25 @@ async function fillDocxTemplate(templateBlob: Blob, templateData: DocxTemplateDa
     }
     return false;
   });
-  // console.log("📋 Loop tags found:", loopTags);
-  // console.log("📝 Data we are providing:", {
-  //   ...templateData,
-  //   Materials: Array.isArray(templateData.Materials) 
-  //     ? `[Array with ${templateData.Materials.length} items]` 
-  //     : templateData.Materials
-  // });
-  // console.log("📝 Materials array details:", {
-  //   isArray: Array.isArray(templateData.Materials),
-  //   length: Array.isArray(templateData.Materials) ? templateData.Materials.length : 'N/A',
-  //   type: typeof templateData.Materials,
-  //   firstItem: Array.isArray(templateData.Materials) && templateData.Materials.length > 0 ? templateData.Materials[0] : null,
-  // });
+  console.log("📋 Loop tags found:", loopTags);
+  console.log("📝 Data we are providing:", {
+    ...templateData,
+    Materials: Array.isArray(templateData.Materials) 
+      ? `[Array with ${templateData.Materials.length} items]` 
+      : templateData.Materials
+  });
+  console.log("📝 Materials array details:", {
+    isArray: Array.isArray(templateData.Materials),
+    length: Array.isArray(templateData.Materials) ? templateData.Materials.length : 'N/A',
+    type: typeof templateData.Materials,
+    firstItem: Array.isArray(templateData.Materials) && templateData.Materials.length > 0 ? templateData.Materials[0] : null,
+  });
 
   try {
     // Render the document - replaces all {placeholder} values
-    // console.log("🔄 Attempting to render template...");
+    console.log("🔄 Attempting to render template...");
     doc.render(templateData);
-    // console.log("✅ Template rendered successfully");
+    console.log("✅ Template rendered successfully");
   } catch (error: any) {
     console.error("❌ Error rendering template:", error);
     console.error("❌ Error type:", error.name);
@@ -451,28 +371,25 @@ export async function generateDocxFromTemplateBlob(
   templateData: DocxTemplateData,
   workspaceId: string,
 ): Promise<Blob> {
-  // console.log("🚀 generateDocxFromTemplateBlob called", { templateType, templateDataKeys: Object.keys(templateData) });
+  console.log("🚀 generateDocxFromTemplateBlob called", { templateType, templateDataKeys: Object.keys(templateData) });
   
   try {
     // Fetch the template
-    // console.log("📥 Fetching template:", templateType);
+    console.log("📥 Fetching template:", templateType);
     const templateBlob = await fetchDocxTemplate(templateType, workspaceId);
-    // console.log("✅ Template fetched, size:", templateBlob.size);
+    console.log("✅ Template fetched, size:", templateBlob.size);
 
-    // Add system fields if not provided; ensure compound-macro arrays are never undefined
+    // Add system fields if not provided
     const fullTemplateData: DocxTemplateData = {
       Date: format(new Date(), "MM/dd/yyyy"),
       ...templateData,
-      ChangeOrderProjectMaterials: Array.isArray(templateData.ChangeOrderProjectMaterials)
-        ? templateData.ChangeOrderProjectMaterials
-        : [],
     };
-    // console.log("📝 Full template data prepared, keys:", Object.keys(fullTemplateData));
+    console.log("📝 Full template data prepared, keys:", Object.keys(fullTemplateData));
 
     // Fill the template and return blob
-    // console.log("🔄 Calling fillDocxTemplate...");
+    console.log("🔄 Calling fillDocxTemplate...");
     const result = await fillDocxTemplate(templateBlob, fullTemplateData);
-    // console.log("✅ fillDocxTemplate completed, result size:", result.size);
+    console.log("✅ fillDocxTemplate completed, result size:", result.size);
     return result;
   } catch (error: any) {
     console.error("❌ Error in generateDocxFromTemplateBlob:", error);

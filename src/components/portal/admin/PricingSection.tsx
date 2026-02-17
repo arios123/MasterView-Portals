@@ -18,7 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Can } from '@/components/Can';
 import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockMaterialOptions, getMockLaborOptions, getMockPackages } from '@/utils/mockData';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -491,7 +492,6 @@ export function PricingSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
-  const isMobile = useIsMobile();
   const canEdit = can('tab.admin_pricing.view') && can('tab.admin_pricing.edit');
   
   // Component-level permission checks
@@ -525,6 +525,23 @@ export function PricingSection() {
   const fetchPackages = async () => {
     if (!workspaceId) return;
     try {
+      if (isDemoMode()) {
+        const mockPackages = getMockPackages().map((p) => ({
+          id: p.id,
+          name: p.name,
+          packageGroupId: p.packageGroupId,
+          zeroLabor: p.zeroLabor,
+          workspaceId: p.workspaceId,
+          createdBy: p.createdBy,
+          createdAt: p.createdAt,
+          updatedBy: p.updatedBy,
+          updatedAt: p.updatedAt,
+          items: [],
+        }));
+        setPackages(mockPackages);
+        return;
+      }
+
       const { data, error} = await (supabase as any)
         .from('packages')
         .select('*')
@@ -556,6 +573,28 @@ export function PricingSection() {
   const fetchItems = async () => {
     if (!workspaceId) return;
     try {
+      if (isDemoMode()) {
+        const mockMaterials = getMockMaterialOptions();
+        const mockLabor = getMockLaborOptions();
+        const materials = mockMaterials.map((m) => ({
+          id: m.id,
+          type: 'Material' as const,
+          code: m.id.slice(0, 8),
+          description: m.name,
+          unitPrice: Number(m.price),
+        }));
+        const labor = mockLabor.map((l) => ({
+          id: l.id,
+          type: 'Labor' as const,
+          code: l.id.slice(0, 8),
+          description: l.name,
+          unitPrice: Number(l.price),
+        }));
+        const combined = [...materials, ...labor];
+        setPriceItems(combined);
+        return;
+      }
+
       const [materialsRes, laborRes] = await Promise.all([
         (supabase as any).from('material_options').select('*').eq('workspace_id', workspaceId),
         (supabase as any).from('labor_options').select('*').eq('workspace_id', workspaceId)
@@ -564,20 +603,20 @@ export function PricingSection() {
       if (materialsRes.error) throw materialsRes.error;
       if (laborRes.error) throw laborRes.error;
 
-      const materials = (materialsRes.data || []).map(m => ({
+      const materials = (materialsRes.data || []).map((m: any) => ({
         id: m.id,
         type: 'Material' as const,
         code: m.id.slice(0, 8),
         description: m.name,
-        unitPrice: Number(m.unit_price)
+        unitPrice: Number(m.unit_price ?? m.price)
       }));
 
-      const labor = (laborRes.data || []).map(l => ({
+      const labor = (laborRes.data || []).map((l: any) => ({
         id: l.id,
         type: 'Labor' as const,
         code: l.id.slice(0, 8),
         description: l.name,
-        unitPrice: Number(l.unit_price)
+        unitPrice: Number(l.unit_price ?? l.price)
       }));
 
       const combined = [...materials, ...labor];
@@ -882,7 +921,6 @@ export function PricingSection() {
                       onClick={() => setCsvInstructionsOpen(true)}
                       disabled={uploading}
                       className="gap-2"
-                      data-onboarding-highlight="admin-pricing-add-items"
                     >
                       <Upload className="h-4 w-4" />
                       {uploading ? 'Uploading...' : 'Import CSV'}
@@ -907,7 +945,7 @@ export function PricingSection() {
             <Input placeholder="Search items…" value={q} onChange={(e) => setQ(e.target.value)} />
             
             {canEditItems && (
-              <div className="grid grid-cols-4 gap-3 items-end" data-onboarding-highlight="admin-pricing-add-items">
+              <div className="grid grid-cols-4 gap-3 items-end">
                 <div className="space-y-1">
                   <Label className="text-xs">Type</Label>
                   <Select value={newItemType} onValueChange={(value: 'material' | 'labor') => setNewItemType(value)}>
@@ -938,103 +976,51 @@ export function PricingSection() {
                     onChange={(e) => setNewItemPrice(e.target.value)}
                   />
                 </div>
-                <Button 
-                  onClick={handleSaveNewItem}
-                  data-onboarding-highlight="admin-save-item-button"
-                >
+                <Button onClick={handleSaveNewItem}>
                   <Plus className="mr-2 h-4 w-4" />
                   Save Item
                 </Button>
               </div>
             )}
             <div className="rounded-lg border overflow-hidden">
-              {isMobile ? (
-                /* Mobile: Horizontally scrollable container */
-                <div className="overflow-x-auto">
-                  <div className="min-w-full inline-block">
-                    <div className={`grid ${itemsEditEnabled ? 'grid-cols-[40px_100px_1fr_90px_2fr]' : 'grid-cols-[100px_1fr_90px_2fr]'} bg-muted/50 px-3 py-2 text-xs font-medium gap-4 min-w-max`}>
-                      {itemsEditEnabled && (
-                        <div>
-                          <input
-                            type="checkbox"
-                            checked={filtered.length > 0 && selectedItems.size === filtered.length}
-                            onChange={toggleSelectAll}
-                            className="cursor-pointer"
-                          />
-                        </div>
-                      )}
-                      <div className="whitespace-nowrap">Type</div>
-                      <div className="whitespace-nowrap">Name</div>
-                      <div className="text-right whitespace-nowrap">Unit Price</div>
-                      <div className="whitespace-nowrap">ID</div>
-                    </div>
-                    <ScrollArea className="h-96">
-                      {filtered.map((i) => (
-                        <div key={i.id} className={`grid ${itemsEditEnabled ? 'grid-cols-[40px_100px_1fr_90px_2fr]' : 'grid-cols-[100px_1fr_90px_2fr]'} px-3 py-2 border-b text-sm items-center gap-4 min-w-max`}>
-                          {itemsEditEnabled && (
-                            <div>
-                              <input
-                                type="checkbox"
-                                checked={selectedItems.has(i.id)}
-                                onChange={() => toggleItemSelection(i.id)}
-                                className="cursor-pointer"
-                              />
-                            </div>
-                          )}
-                          <div className="whitespace-nowrap">{i.type}</div>
-                          <div className="whitespace-nowrap">{i.description}</div>
-                          <div className="text-right whitespace-nowrap">${i.unitPrice.toFixed(2)}</div>
-                          <div className="overflow-x-auto">
-                            <code className="text-xs font-mono text-muted-foreground whitespace-nowrap">{i.id}</code>
-                          </div>
-                        </div>
-                      ))}
-                    </ScrollArea>
+              <div className={`grid ${itemsEditEnabled ? 'grid-cols-[40px_100px_1fr_90px_2fr]' : 'grid-cols-[100px_1fr_90px_2fr]'} bg-muted/50 px-3 py-2 text-xs font-medium gap-4`}>
+                {itemsEditEnabled && (
+                  <div>
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedItems.size === filtered.length}
+                      onChange={toggleSelectAll}
+                      className="cursor-pointer"
+                    />
                   </div>
-                </div>
-              ) : (
-                /* Desktop: Normal layout */
-                <>
-                  <div className={`grid ${itemsEditEnabled ? 'grid-cols-[40px_100px_1fr_90px_2fr]' : 'grid-cols-[100px_1fr_90px_2fr]'} bg-muted/50 px-3 py-2 text-xs font-medium gap-4`}>
+                )}
+                <div>Type</div>
+                <div>Name</div>
+                <div className="text-right">Unit Price</div>
+                <div>ID</div>
+              </div>
+              <ScrollArea className="h-96">
+                {filtered.map((i) => (
+                  <div key={i.id} className={`grid ${itemsEditEnabled ? 'grid-cols-[40px_100px_1fr_90px_2fr]' : 'grid-cols-[100px_1fr_90px_2fr]'} px-3 py-2 border-b text-sm items-center gap-4`}>
                     {itemsEditEnabled && (
                       <div>
                         <input
                           type="checkbox"
-                          checked={filtered.length > 0 && selectedItems.size === filtered.length}
-                          onChange={toggleSelectAll}
+                          checked={selectedItems.has(i.id)}
+                          onChange={() => toggleItemSelection(i.id)}
                           className="cursor-pointer"
                         />
                       </div>
                     )}
-                    <div>Type</div>
-                    <div>Name</div>
-                    <div className="text-right">Unit Price</div>
-                    <div>ID</div>
+                    <div>{i.type}</div>
+                    <div>{i.description}</div>
+                    <div className="text-right">${i.unitPrice.toFixed(2)}</div>
+                    <div className="overflow-x-auto">
+                      <code className="text-xs font-mono text-muted-foreground whitespace-nowrap">{i.id}</code>
+                    </div>
                   </div>
-                  <ScrollArea className="h-96">
-                    {filtered.map((i) => (
-                      <div key={i.id} className={`grid ${itemsEditEnabled ? 'grid-cols-[40px_100px_1fr_90px_2fr]' : 'grid-cols-[100px_1fr_90px_2fr]'} px-3 py-2 border-b text-sm items-center gap-4`}>
-                        {itemsEditEnabled && (
-                          <div>
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.has(i.id)}
-                              onChange={() => toggleItemSelection(i.id)}
-                              className="cursor-pointer"
-                            />
-                          </div>
-                        )}
-                        <div>{i.type}</div>
-                        <div>{i.description}</div>
-                        <div className="text-right">${i.unitPrice.toFixed(2)}</div>
-                        <div className="overflow-x-auto">
-                          <code className="text-xs font-mono text-muted-foreground whitespace-nowrap">{i.id}</code>
-                        </div>
-                      </div>
-                    ))}
-                  </ScrollArea>
-                </>
-              )}
+                ))}
+              </ScrollArea>
             </div>
           </CardContent>
         </Card>
@@ -1186,9 +1172,9 @@ export function PricingSection() {
                 <div className="space-y-2">
                   <p className="font-medium">Example:</p>
                   <div className="rounded-md bg-muted px-3 py-2 font-mono text-xs overflow-x-auto border text-left">
-                    <code>type,name,unit_price</code><br></br>
-                    <code>Material,"2x4 Stud",12.50</code><br></br>
-                    <code>Labor,"Installation",100.00</code>
+                    <code>type,name,unit_price</code><br />
+                    <code>Material,&quot;2x4 Stud&quot;,12.50</code><br />
+                    <code>Labor,&quot;Installation&quot;,100.00</code>
                   </div>
                 </div>
 
@@ -1202,7 +1188,7 @@ export function PricingSection() {
             <AlertDialogCancel disabled={uploading}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              disabled={uploading || isDemoMode()}
               className="gap-2"
             >
               <Upload className="h-4 w-4" />

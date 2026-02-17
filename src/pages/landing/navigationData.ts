@@ -11,28 +11,20 @@ export const navigationSections = [
     title: "Company",
     links: [
       { label: "About", href: "/about" },
-      { label: "The Team", href: "/team" },
-    ],
-  },
-  {
-    title: "Tutorials",
-    links: [
-      { label: "Doc Generator Guide", href: "/documentation" },
-      { label: "Video Tutorials", href: "/video-tutorials" },
+      { label: "The Team", href: "#" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Doc Generator Guide", href: "/documentation" },
-      { label: "Video Tutorials", href: "/video-tutorials" },
+      { label: "Documentation", href: "#" },
       { label: "Support", href: "/support" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "/privacy" },
+      { label: "Privacy", href: "#" },
       { label: "Terms", href: "/terms" },
       { label: "Security", href: "/security" },
     ],

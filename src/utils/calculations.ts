@@ -13,3 +13,19 @@ export function computeTotals(items: LineItem[], taxRate = 0.06) {
   const sub = laborSub + matSub + tax;
   return { laborSub, matSub, tax, sub };
 }
+
+// Unit Tests
+(function runUnitTests(){
+  const items: LineItem[] = [
+    { id: "t1", kind: "labor", name: "Demo", qty: 2, unitPrice: 100 },
+    { id: "t2", kind: "material", name: "Tile", qty: 100, unitPrice: 10, wastePct: 20 },
+  ];
+  const { laborSub, matSub, tax, sub } = computeTotals(items);
+  // Expectations
+  const expectedLabor = 200; // 2 * 100
+  const expectedMat = 100 * 1.2 * 10; // 20% waste
+  const expectedTax = expectedMat * 0.06;
+  const ok = Math.abs(laborSub - expectedLabor) < 1e-6 && Math.abs(matSub - expectedMat) < 1e-6 && Math.abs(tax - expectedTax) < 1e-6 && Math.abs(sub - (expectedLabor + expectedMat + expectedTax)) < 1e-6;
+  // eslint-disable-next-line no-console
+  console.log("[Portal tests] totals:", ok ? "OK" : "FAILED", { laborSub, matSub, tax, sub });
+})();

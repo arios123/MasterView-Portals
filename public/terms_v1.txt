@@ -56,8 +56,8 @@ This includes—but is not limited to—non-payment, misuse, breach of this Agre
 
 ⸻
 
-6. Independence From Third-Party Obligations
- 1. Licensee acknowledges that Software access is entirely separate from any relationship, contract, or financial obligation involving any third party or other entity.
+6. Independence From KBA or Third-Party Obligations
+ 1. Licensee acknowledges that Software access is entirely separate from any relationship, contract, or financial obligation involving KBA Kitchen and Bath or any other party.
  2. Licensee agrees that suspension or termination of access is valid even if Licensee claims it is unrelated to other business matters.
  3. No external agreement overrides this EULA or restricts Licensor’s discretionary rights.
 

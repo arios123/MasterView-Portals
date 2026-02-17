@@ -54,12 +54,6 @@ export function useLocalStorageCache<T>(
       return deserialize(item);
     } catch (error) {
       console.error(`Error reading cache for key "${key}":`, error);
-      // Clear corrupted cache entry
-      try {
-        window.localStorage.removeItem(key);
-      } catch (clearError) {
-        console.error(`Failed to clear corrupted cache for key "${key}":`, clearError);
-      }
       return null;
     }
   }, [key, deserialize]);
@@ -215,7 +209,7 @@ export function getCacheKey(
     throw new Error('getCacheKey requires userId and workspaceId for security. Use useCacheKey hook instead.');
   }
   
-  const parts = ['mvp_cache', `user:${userId}`, `workspace:${workspaceId}`, prefix];
+  const parts = ['kba_cache', `user:${userId}`, `workspace:${workspaceId}`, prefix];
   if (projectId) parts.push(`project:${projectId}`);
   if (tab) parts.push(`tab:${tab}`);
   if (subKey) parts.push(subKey);
@@ -262,7 +256,7 @@ export function useClearProjectCache() {
     
     try {
       const keys = Object.keys(window.localStorage);
-      const userPrefix = `mvp_cache.user:${user.id}.workspace:${currentWorkspace.id}`;
+      const userPrefix = `kba_cache.user:${user.id}.workspace:${currentWorkspace.id}`;
       const projectSuffix = `project:${projectId}`;
       
       keys.forEach((key) => {
@@ -293,7 +287,7 @@ export function useClearAllCache() {
     
     try {
       const keys = Object.keys(window.localStorage);
-      const userPrefix = `mvp_cache.user:${user.id}.workspace:${currentWorkspace.id}`;
+      const userPrefix = `kba_cache.user:${user.id}.workspace:${currentWorkspace.id}`;
       
       keys.forEach((key) => {
         if (key.startsWith(userPrefix)) {
@@ -314,7 +308,7 @@ export function clearAllCacheUnsafe() {
   try {
     const keys = Object.keys(window.localStorage);
     keys.forEach((key) => {
-      if (key.startsWith('mvp_cache.')) {
+      if (key.startsWith('kba_cache.')) {
         window.localStorage.removeItem(key);
       }
     });

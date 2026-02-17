@@ -4,7 +4,8 @@ import { LineItem, Project } from '@/types';
 import { filterValidItems } from '@/utils/quoteBuilderUtils';
 import { syncMaterialRevisions } from './useMaterialRevisionsSync';
 import { rollForwardDraft } from '@/utils/draftRollForward';
-import { logInsert } from '@/lib/auditLog';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockVersionLabor, getMockVersionMaterials, getMockLaborOptions, getMockMaterialOptions } from '@/utils/mockData';
 
 interface SaveDraftParams {
   user: any;
@@ -35,6 +36,55 @@ interface LoadDraftParams {
 export function useDraftOperations() {
   const loadDraft = async ({ draft, setItems, setMultiplier, setDraftName, setPaymentSplits, setEstimatedStartDate, setEstimatedConstructionTime }: LoadDraftParams) => {
     try {
+      if (isDemoMode()) {
+        const versionLabor = getMockVersionLabor().filter((vl) => vl.version_id === draft.version_id);
+        const versionMaterials = getMockVersionMaterials().filter((vm) => vm.version_id === draft.version_id);
+        const laborOpts = getMockLaborOptions();
+        const materialOpts = getMockMaterialOptions();
+        const draftItems: LineItem[] = [];
+
+        versionLabor.forEach((item) => {
+          const opt = laborOpts.find((l) => l.id === item.labor_id);
+          draftItems.push({
+            id: item.labor_id,
+            name: item.item_name || opt?.name || 'Labor',
+            qty: Number(item.quantity),
+            unitPrice: Number(item.price),
+            kind: 'labor',
+          });
+        });
+        versionMaterials.forEach((item) => {
+          const opt = materialOpts.find((m) => m.id === item.material_id);
+          draftItems.push({
+            id: item.material_id,
+            name: item.item_name || opt?.name || 'Material',
+            qty: Number(item.quantity),
+            unitPrice: Number(item.price),
+            wastePct: Number(item.waste_pct) || 0,
+            kind: 'material',
+          });
+        });
+
+        setItems(() => draftItems);
+        setMultiplier(Number(draft.multiplier) || 1.25);
+        setDraftName('');
+        setPaymentSplits([
+          Number(draft.payment_1_percentage) || 25,
+          Number(draft.payment_2_percentage) || 25,
+          Number(draft.payment_3_percentage) || 25,
+          Number(draft.payment_4_percentage) || 25,
+        ]);
+        if (draft.estimated_start_date) {
+          const [year, month, day] = draft.estimated_start_date.split('-').map(Number);
+          setEstimatedStartDate(new Date(year, month - 1, day));
+        } else {
+          setEstimatedStartDate(undefined);
+        }
+        setEstimatedConstructionTime(draft.estimated_construction_time ?? undefined);
+        toast.success(`Loaded ${draft.name || draft.status}`);
+        return;
+      }
+
       // Load labor items
       const { data: laborData, error: laborError } = await supabase
         .from('version_labor')
@@ -54,7 +104,6 @@ export function useDraftOperations() {
       // Convert to LineItem format
       const draftItems: LineItem[] = [];
 
-      // Add labor items
       laborData?.forEach((item: any) => {
         if (item.labor_options) {
           draftItems.push({
@@ -67,7 +116,6 @@ export function useDraftOperations() {
         }
       });
 
-      // Add material items
       materialData?.forEach((item: any) => {
         if (item.material_options) {
           draftItems.push({
@@ -83,21 +131,17 @@ export function useDraftOperations() {
 
       setItems(() => draftItems);
       setMultiplier(Number(draft.multiplier) || 1.4);
-      setDraftName(''); // Keep blank for user to enter fresh
+      setDraftName('');
 
-      // Load payment splits
-      // Use != null to check for both null and undefined, but allow 0 values
       const splits = [
-        draft.payment_1_percentage != null ? Number(draft.payment_1_percentage) : 40,
-        draft.payment_2_percentage != null ? Number(draft.payment_2_percentage) : 30,
-        draft.payment_3_percentage != null ? Number(draft.payment_3_percentage) : 20,
-        draft.payment_4_percentage != null ? Number(draft.payment_4_percentage) : 10,
+        Number(draft.payment_1_percentage) || 40,
+        Number(draft.payment_2_percentage) || 30,
+        Number(draft.payment_3_percentage) || 20,
+        Number(draft.payment_4_percentage) || 10,
       ];
       setPaymentSplits(splits);
 
-      // Load estimated start date and construction time
       if (draft.estimated_start_date) {
-        // Parse date string in local timezone to avoid timezone conversion issues
         const [year, month, day] = draft.estimated_start_date.split('-').map(Number);
         setEstimatedStartDate(new Date(year, month - 1, day));
       } else {
@@ -138,44 +182,15 @@ export function useDraftOperations() {
     try {
       // If editing an existing draft, use roll-forward logic to preserve Materials tab state
       if (editingVersionId) {
+        console.log('Rolling forward draft from:', editingVersionId);
         
-        // Normalize and validate items before saving
-        const normalizedItems = items.map((item) => {
-          const normalized: LineItem = {
-            ...item,
-            qty: item.qty ?? 0,
-            unitPrice: item.unitPrice ?? 0,
-            name: item.name?.trim() || '',
-          };
-          return normalized;
-        });
-
-        // Validate that all items have required fields
-        const invalidItems = normalizedItems.filter((item) => {
-          if (!item.name || item.name.trim() === '') {
-            return true; // Name is required
-          }
-          if (item.qty === undefined || item.qty === null || isNaN(item.qty)) {
-            return true; // Qty must be a valid number
-          }
-          if (item.unitPrice === undefined || item.unitPrice === null || isNaN(item.unitPrice)) {
-            return true; // Price must be a valid number
-          }
-          return false;
-        });
-
-        if (invalidItems.length > 0) {
-          toast.error('Please fill in all fields (Name, Qty, and Price) before saving. Empty fields will default to 0.');
-          return false;
-        }
-
         const rollForwardResult = await rollForwardDraft({
           sourceVersionId: editingVersionId,
           projectId: project.id,
           workspaceId,
           userId: user.id,
           newDraftName: draftName.trim(),
-          quoteItems: normalizedItems,
+          quoteItems: items,
           multiplier,
           paymentSplits,
           estimatedStartDate,
@@ -194,37 +209,9 @@ export function useDraftOperations() {
         return true;
       }
 
-      // Validate items before saving (check original values, not normalized)
-      const invalidItems = items.filter((item) => {
-        if (!item.name || item.name.trim() === '') {
-          return true; // Name is required
-        }
-        if (item.qty === undefined || item.qty === null || isNaN(item.qty)) {
-          return true; // Qty must be a valid number
-        }
-        if (item.unitPrice === undefined || item.unitPrice === null || isNaN(item.unitPrice)) {
-          return true; // Price must be a valid number
-        }
-        return false;
-      });
-
-      if (invalidItems.length > 0) {
-        toast.error('Please fill in all fields (Name, Qty, and Price) before saving. Empty fields will default to 0.');
-        return false;
-      }
-
-      // Normalize items after validation (default to 0 for numbers, trim name)
-      const normalizedItems = items.map((item) => {
-        const normalized: LineItem = {
-          ...item,
-          qty: item.qty ?? 0,
-          unitPrice: item.unitPrice ?? 0,
-          name: item.name?.trim() || '',
-        };
-        return normalized;
-      });
-
       // Otherwise, create a brand-new draft (current behavior)
+      console.log('Creating new draft. Items to save:', items);
+
       // Create new version
       const { data: versionData, error: versionError } = await supabase
         .from('project_versions')
@@ -248,9 +235,11 @@ export function useDraftOperations() {
       if (versionError) throw versionError;
 
       const versionId = versionData.version_id;
+      console.log('Created new version:', versionId);
 
-      // Save labor items (only those with valid UUIDs) - use normalized items
-      const laborItems = filterValidItems(normalizedItems, 'labor');
+      // Save labor items (only those with valid UUIDs)
+      const laborItems = filterValidItems(items, 'labor');
+      console.log('Labor items to save:', laborItems);
 
       if (laborItems.length > 0) {
         const laborInserts = laborItems.map((item) => ({
@@ -269,8 +258,9 @@ export function useDraftOperations() {
         }
       }
 
-      // Save material items (only those with valid UUIDs) - use normalized items
-      const materialItems = filterValidItems(normalizedItems, 'material');
+      // Save material items (only those with valid UUIDs)
+      const materialItems = filterValidItems(items, 'material');
+      console.log('Material items to save:', materialItems);
 
       if (materialItems.length > 0) {
         const materialInserts = materialItems.map((item) => ({
@@ -294,7 +284,7 @@ export function useDraftOperations() {
       await syncMaterialRevisions(versionId, materialItems);
 
       const totalSaved = laborItems.length + materialItems.length;
-      const totalItems = normalizedItems.length;
+      const totalItems = items.length;
 
       if (totalSaved === 0) {
         toast.error('No valid database items to save. Please add items from the catalog.');
@@ -309,11 +299,6 @@ export function useDraftOperations() {
 
       if (updateError) {
         console.error('Error updating active version:', updateError);
-      }
-
-      // Log audit event for draft creation
-      if (workspaceId && user && versionData) {
-        await logInsert(workspaceId, user.id, 'project_versions', versionId, versionData, 'Projects');
       }
 
         toast.success(`Created new draft: ${draftName.trim()}!`);

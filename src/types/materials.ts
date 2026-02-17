@@ -15,7 +15,6 @@ export interface ChangeOrder {
   title: string;
   itemsA: Item[];
   itemsB: Item[];
-  /** Total of the original sold contract (before this change order's deltas). Used for summary cards. */
   soldContractTotal?: number;
 }
 

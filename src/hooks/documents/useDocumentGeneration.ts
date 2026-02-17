@@ -87,7 +87,6 @@ export function useDocumentGeneration(refetch: () => void) {
       }
 
       // Prepare template data
-      // Pass selectedChangeOrderId even if not required, so ChangeOrderProjectMaterials can be populated
       const templateData = await prepareTemplateData(
         projectId,
         project,
@@ -98,9 +97,7 @@ export function useDocumentGeneration(refetch: () => void) {
         itemsToUse,
         multiplierToUse,
         requiresChangeOrder,
-        projectType,
-        workspaceId,
-        selectedChangeOrderId || null
+        projectType
       );
 
       console.log('📄 Full Template Data for DOCX Generation:', {

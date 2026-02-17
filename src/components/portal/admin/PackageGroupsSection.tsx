@@ -3,9 +3,6 @@ import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -105,12 +102,7 @@ function SortablePackageGroup({ group, onUpdate, onDelete, canEdit }: SortablePa
   );
 }
 
-interface PackageGroupsSectionProps {
-  isCollapsible?: boolean;
-  isOpen?: boolean;
-}
-
-export function PackageGroupsSection({ isCollapsible = false, isOpen = true }: PackageGroupsSectionProps = {}) {
+export function PackageGroupsSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -231,8 +223,12 @@ export function PackageGroupsSection({ isCollapsible = false, isOpen = true }: P
     }
   };
 
-  const cardContent = (
-    <CardContent className="space-y-4">
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Package Groups</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <Can permission="tab.admin_workspacesetup.edit">
           <div className="flex gap-2">
             <Input
@@ -276,33 +272,7 @@ export function PackageGroupsSection({ isCollapsible = false, isOpen = true }: P
             </div>
           )}
         </div>
-    </CardContent>
-  );
-
-  if (isCollapsible) {
-    return (
-      <Card>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <CardTitle>Package Groups</CardTitle>
-              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "transform rotate-180")} />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {cardContent}
-        </CollapsibleContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Package Groups</CardTitle>
-      </CardHeader>
-      {cardContent}
+      </CardContent>
     </Card>
   );
 }

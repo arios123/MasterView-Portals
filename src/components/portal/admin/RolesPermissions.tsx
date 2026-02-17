@@ -105,9 +105,7 @@ const PERMISSION_GROUPS: TabGroup[] = [
         components: {
           components: [
             { key: 'component.lookbook_questionstab.view', description: 'View Questions tab' },
-            { key: 'component.lookbook_questionstab.edit', description: 'Edit Questions tab (answer questions)' },
-            { key: 'component.lookbook_questionstabquestions.add', description: 'Add questions in Questions tab' },
-            { key: 'component.lookbook_questionstabquestions.delete', description: 'Delete questions in Questions tab' },
+            { key: 'component.lookbook_questionstab.edit', description: 'Edit Questions tab' },
             { key: 'component.lookbook_selectiontab.view', description: 'View Selection tab' },
             { key: 'component.lookbook_selectiontab.edit', description: 'Edit Selection tab' },
             { key: 'component.lookbook_summarytab.view', description: 'View Summary tab' },
@@ -172,10 +170,10 @@ const PERMISSION_GROUPS: TabGroup[] = [
             { key: 'component.materials_changeordermaterials.edit', description: 'Edit change order materials' },
             { key: 'component.materials_changeordermaterialsprices.view', description: 'View change order materials prices' },
             { key: 'component.materials_changeorderrevisedprices.view', description: 'View change order revised prices' },
-            { key: 'component.materials_savedraft.view', description: 'View Save button for quote/draft' },
-            { key: 'component.materials_savedraft.edit', description: 'Use Save button for quote/draft' },
-            { key: 'component.materials_savechangeorder.view', description: 'View Save buttons for change orders' },
-            { key: 'component.materials_savechangeorder.edit', description: 'Use Save buttons for change orders' },
+            { key: 'component.materials_savedraft.view', description: 'View save draft button (Materials)' },
+            { key: 'component.materials_savedraft.edit', description: 'Edit save draft (Materials)' },
+            { key: 'component.materials_savechangeorder.view', description: 'View save change order button' },
+            { key: 'component.materials_savechangeorder.edit', description: 'Edit save change order' },
           ],
         },
       },
@@ -333,44 +331,22 @@ const PERMISSION_GROUPS: TabGroup[] = [
             { key: 'component.adminworkspacesetup_packagegroups.edit', description: 'Edit package groups' },
             { key: 'component.adminworkspacesetup_lookbookcategories.view', description: 'View lookbook categories' },
             { key: 'component.adminworkspacesetup_lookbookcategories.edit', description: 'Edit lookbook categories' },
-            { key: 'component.adminworkspacesetup_lookbookdefaultquestions.view', description: 'View lookbook default questions' },
-            { key: 'component.adminworkspacesetup_lookbookdefaultquestions.edit', description: 'Edit lookbook default questions' },
             { key: 'component.adminworkspacesetup_documentgroups.view', description: 'View document groups' },
             { key: 'component.adminworkspacesetup_documentgroups.edit', description: 'Edit document groups' },
             { key: 'component.adminworkspacesetup_attachmentfolders.view', description: 'View attachment folders' },
             { key: 'component.adminworkspacesetup_attachmentfolders.edit', description: 'Edit attachment folders' },
             { key: 'component.adminworkspacesetup_calendarappointmenttypes.view', description: 'View calendar appointment types' },
             { key: 'component.adminworkspacesetup_calendarappointmenttypes.edit', description: 'Edit calendar appointment types' },
-            { key: 'component.adminworkspacesetup_taxes.view', description: 'View taxes' },
-            { key: 'component.adminworkspacesetup_taxes.edit', description: 'Edit taxes' },
             { key: 'component.adminworkspacesetup_themecustomization.view', description: 'View theme customization' },
             { key: 'component.adminworkspacesetup_themecustomization.edit', description: 'Edit theme customization' },
             { key: 'component.adminworkspacesetup_importclients.view', description: 'View Import Clients button' },
             { key: 'component.adminworkspacesetup_importclients.edit', description: 'Use Import Clients (upload CSV, confirm import)' },
+            { key: 'component.adminworkspacesetup_taxes.view', description: 'View taxes' },
+            { key: 'component.adminworkspacesetup_taxes.edit', description: 'Edit taxes' },
           ],
         },
       },
-      {
-        subTabName: 'Export Data',
-        subTabPermissions: [
-          { key: 'tab.admin_exportdata.view', description: 'View Export Data tab' },
-          { key: 'tab.admin_exportdata.edit', description: 'Edit Export Data tab (use export buttons)' },
-        ],
-      },
     ],
-  },
-  {
-    tabName: 'Other',
-    components: {
-      components: [
-        { key: 'component.other_statussold.set', description: 'Allow changing project status TO "Sold"' },
-        { key: 'component.other_statussold.change', description: 'Allow changing project status FROM "Sold" to other statuses' },
-        { key: 'component.other_statuscompleted.set', description: 'Allow changing project status TO "Completed"' },
-        { key: 'component.other_statuscompleted.change', description: 'Allow changing project status FROM "Completed" to other statuses' },
-        { key: 'component.other_statuslost.set', description: 'Allow changing project status TO "Lost"' },
-        { key: 'component.other_statuslost.change', description: 'Allow changing project status FROM "Lost" to other statuses' },
-      ],
-    },
   },
 ];
 
@@ -948,7 +924,6 @@ export function RolesPermissions() {
               size="sm"
               onClick={handleCreateRole}
               disabled={creating || !workspaceId || !canEditTab}
-              data-onboarding-highlight="admin-create-role-button"
             >
               {creating ? 'Creating…' : 'Create Role'}
             </Button>

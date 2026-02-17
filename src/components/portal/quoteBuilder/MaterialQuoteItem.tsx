@@ -41,7 +41,7 @@ export function MaterialQuoteItem({
       <Textarea
         ref={textareaRef}
         className="min-h-[32px] resize-none w-full min-w-0 text-sm overflow-hidden border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-        value={item.name ?? ''}
+        value={item.name}
         onChange={(e) => {
           onUpdateName(item.id, e.target.value);
           const textarea = e.target;
@@ -57,11 +57,8 @@ export function MaterialQuoteItem({
           <Input
             className="h-8 w-16 md:w-20 border-0 shadow-none focus-visible:border focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0 px-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             type="number"
-            value={item.qty ?? ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              onUpdateQty(item.id, value === '' ? undefined : (isNaN(parseFloat(value)) ? undefined : parseFloat(value)));
-            }}
+            value={item.qty}
+            onChange={(e) => onUpdateQty(item.id, parseFloat(e.target.value) || 0)}
             disabled={readOnly}
           />
         </div>
@@ -72,11 +69,8 @@ export function MaterialQuoteItem({
               <Input
                 className="h-8 w-20 md:w-24 border-0 shadow-none focus-visible:border focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0 px-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 type="number"
-                value={item.unitPrice ?? ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  onUpdatePrice(item.id, value === '' ? undefined : (isNaN(parseFloat(value)) ? undefined : parseFloat(value)));
-                }}
+                value={item.unitPrice}
+                onChange={(e) => onUpdatePrice(item.id, parseFloat(e.target.value) || 0)}
                 disabled={readOnly}
               />
             </div>

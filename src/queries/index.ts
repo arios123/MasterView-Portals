@@ -12,5 +12,6 @@ export * from './payments';
 export * from './calendar';
 export * from './materials';
 export * from './labor';
+export * from './lookbooks';
 export * from './admin';
 

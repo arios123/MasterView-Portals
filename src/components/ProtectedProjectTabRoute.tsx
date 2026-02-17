@@ -3,7 +3,6 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 
-
 interface ProtectedProjectTabRouteProps {
   children: React.ReactNode;
 }
@@ -39,7 +38,7 @@ const ALL_TABS = [
  * This ensures users are authenticated and can only access tabs they have permission to view
  */
 export const ProtectedProjectTabRoute: React.FC<ProtectedProjectTabRouteProps> = ({ children }) => {
-  const { user, loading: authLoading, isPasswordRecovery } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { can, loading: permissionsLoading } = usePermissions();
   const params = useParams<{ clientId?: string; projectId?: string; tab?: string }>();
   const navigate = useNavigate();
@@ -81,8 +80,6 @@ export const ProtectedProjectTabRoute: React.FC<ProtectedProjectTabRouteProps> =
 
   // Check permissions and redirect if necessary
   useEffect(() => {
-    if (isPasswordRecovery) return;
-
     // Wait for auth and permissions to load
     if (authLoading || permissionsLoading || !user) {
       return;
@@ -119,23 +116,21 @@ export const ProtectedProjectTabRoute: React.FC<ProtectedProjectTabRouteProps> =
         navigate('/projects', { replace: true });
       }
     }
-  }, [isPasswordRecovery,params.tab, params.projectId, params.clientId, authLoading, permissionsLoading, user, navigate, normalizeTabName, isTabVisible, getFirstVisibleTab]);
+  }, [params.tab, params.projectId, params.clientId, authLoading, permissionsLoading, user, navigate, normalizeTabName, isTabVisible, getFirstVisibleTab]);
 
   // Show loading while checking auth/permissions
   if (authLoading || permissionsLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-slate-600">Loading...</div>
       </div>
     );
   }
 
   // Redirect to login if not authenticated
-  // Redirect to login if not authenticated
-if (!user && !isPasswordRecovery) {
-  return <Navigate to="/" replace />;
-}
-
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
 
   return <>{children}</>;
 };

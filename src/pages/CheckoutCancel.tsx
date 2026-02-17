@@ -1,15 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { XCircle, ArrowLeft, CreditCard } from 'lucide-react';
+import { isDemoMode } from '@/utils/demoMode';
 
 export default function CheckoutCancel() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const workspaceId = searchParams.get('workspace_id');
+
+  // Redirect away from billing in demo mode
+  useEffect(() => {
+    if (isDemoMode()) {
+      navigate('/projects', { replace: true });
+    }
+  }, [navigate]);
 
   const handleRetry = () => {
     if (workspaceId) {

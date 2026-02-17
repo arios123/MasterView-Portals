@@ -215,7 +215,6 @@ export function MaterialsTab({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-
   const contractTotal = useMemo(() => total(contractItems), [contractItems]);
   const actualTotal = useMemo(
     () =>
@@ -239,71 +238,14 @@ export function MaterialsTab({
     setActualItems((prev) => [...prev, newItem]);
   };
 
-  const handleSaveQuoteOnly = async () => {
-    if (!user || !workspaceId || !versionId) {
-      toast.error('Missing required information to save');
-      return;
-    }
-
-    if (!isSoldProject && (!draftName || draftName.trim() === '')) {
-      toast.error('Please enter a draft name before saving');
-      return;
-    }
-
-    let itemsToSave = actualItems;
-    if (dropSectionLocalValuesGetter.current) {
-      const localValues = dropSectionLocalValuesGetter.current();
-      itemsToSave = actualItems.map((it) => {
-        const local = localValues[it.id];
-        if (local) {
-          return {
-            ...it,
-            ...local,
-            qty: ensureNumber(local.qty, it.qty),
-            price: ensureNumber(local.price, it.price),
-            unmodified: false,
-          };
-        }
-        return it;
-      });
-    }
-
-    if (isSoldProject) {
-      const success = await saveRevisions(itemsToSave);
-      if (success) {
-        setActualItems(itemsToSave);
-        dropSectionLocalValuesGetter.current = null;
-        setHasUnsavedChanges(false);
-        clearMaterialsCacheExceptRevised();
-        toast.success('Materials updated for sold project!');
-      }
-    } else {
-      const result = await saveRevisionsAsNewDraft({
-        items: itemsToSave,
-        projectId: project.id,
-        workspaceId,
-        userId: user.id,
-        draftName: draftName.trim(),
-      });
-
-      if (result.success && result.newVersionId && result.newDraftName) {
-        setActualItems(itemsToSave);
-        setDraftName('');
-        dropSectionLocalValuesGetter.current = null;
-        setHasUnsavedChanges(false);
-        clearMaterialsCacheExceptRevised();
-        onDraftChanged?.(result.newVersionId, result.newDraftName);
-        toast.success('Draft saved');
-      }
-    }
-  };
-
   const handleSaveRevised = async () => {
     if (!user || !workspaceId || !versionId) {
       toast.error('Missing required information to save');
       return;
     }
 
+    // For sold projects, draft name is not required (updating in place)
+    // For non-sold projects, draft name is required (creating new draft)
     if (!isSoldProject && (!draftName || draftName.trim() === '')) {
       toast.error('Please enter a draft name before saving');
       return;
@@ -366,6 +308,65 @@ export function MaterialsTab({
     }
   };
 
+  const handleSaveQuoteOnly = async () => {
+    if (!user || !workspaceId || !versionId) {
+      toast.error('Missing required information to save');
+      return;
+    }
+
+    if (!isSoldProject && (!draftName || draftName.trim() === '')) {
+      toast.error('Please enter a draft name before saving');
+      return;
+    }
+
+    let itemsToSave = actualItems;
+    if (dropSectionLocalValuesGetter.current) {
+      const localValues = dropSectionLocalValuesGetter.current();
+      itemsToSave = actualItems.map((it) => {
+        const local = localValues[it.id];
+        if (local) {
+          return {
+            ...it,
+            ...local,
+            qty: ensureNumber(local.qty, it.qty),
+            price: ensureNumber(local.price, it.price),
+            unmodified: false,
+          };
+        }
+        return it;
+      });
+    }
+
+    if (isSoldProject) {
+      const success = await saveRevisions(itemsToSave);
+      if (success) {
+        setActualItems(itemsToSave);
+        dropSectionLocalValuesGetter.current = null;
+        setHasUnsavedChanges(false);
+        clearMaterialsCacheExceptRevised();
+        toast.success('Materials updated for sold project!');
+      }
+    } else {
+      const result = await saveRevisionsAsNewDraft({
+        items: itemsToSave,
+        projectId: project.id,
+        workspaceId,
+        userId: user.id,
+        draftName: draftName.trim(),
+      });
+
+      if (result.success && result.newVersionId && result.newDraftName) {
+        setActualItems(itemsToSave);
+        setDraftName('');
+        dropSectionLocalValuesGetter.current = null;
+        setHasUnsavedChanges(false);
+        clearMaterialsCacheExceptRevised();
+        onDraftChanged?.(result.newVersionId, result.newDraftName);
+        toast.success('Draft saved');
+      }
+    }
+  };
+
   // Expose handleSaveRevised function to parent via ref
   useEffect(() => {
     if (saveRef) {
@@ -389,7 +390,7 @@ export function MaterialsTab({
       <DndProvider backend={HTML5Backend}>
         <div className="mx-auto max-w-4xl space-y-5 text-sm">
           {/* Materials header with draft label */}
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3">
             <h2 className="text-base font-semibold">Materials</h2>
             {activeDraftName ? (
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-md">
@@ -408,7 +409,7 @@ export function MaterialsTab({
           {/* Quote section */}
           {canViewDraftMaterials && (
             <>
-              <p className="text-xs font-medium text-muted-foreground text-left">Quote's</p>
+              <p className="text-xs font-medium text-muted-foreground text-left mb-1">Quote's</p>
               <ContractMaterialsCard
                 items={contractItems}
                 actualItems={actualItems}
@@ -438,9 +439,9 @@ export function MaterialsTab({
               />
 
               {canViewDraftRevisedPrices && !hidden && (
-                <div className="flex justify-between border-t pt-2 text-xs">
-                  <span>Difference</span>
-                  <span className={`${diff < 0 ? 'text-green-600' : 'text-red-600'}`}>{money(diff)}</span>
+                <div className="flex justify-between border-t pt-2 text-xs items-center">
+                  <span className="text-muted-foreground">Difference</span>
+                  <span className={`font-medium ${diff < 0 ? 'text-green-600' : 'text-red-600'}`}>{money(diff)}</span>
                 </div>
               )}
 
@@ -463,7 +464,7 @@ export function MaterialsTab({
           {/* Change Order section */}
           {canViewChangeOrderMaterials && (
             <div className="space-y-5">
-              <p className="text-xs font-medium text-muted-foreground text-left">Change order's</p>
+              <p className="text-xs font-medium text-muted-foreground text-left mb-1">Change order's</p>
               {changeOrders.map((co) => (
                 <ChangeOrderSection
                   key={co.id}

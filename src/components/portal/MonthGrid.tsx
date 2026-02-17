@@ -76,7 +76,7 @@ export function MonthGrid({
               </div>
               <div className="space-y-1 mt-1">
                 {visibleEvents.slice(0, 3).map(event => {
-                  const eventColor = typeColors[event.appointmentTypeId || ''] || '#666';
+                  const eventColor = typeColors[event.appointmentTypeId] || '#666';
                   return (
                     <div 
                       key={event.id} 
@@ -85,13 +85,13 @@ export function MonthGrid({
                         backgroundColor: eventColor + '20',
                         borderLeft: `3px solid ${eventColor}`
                       }}
-                      title={`${event.time} - ${event.title}`}
+                      title={`${event.time} - ${event.title || event.clientName || 'Event'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventClick?.(event);
                       }}
                     >
-                      {event.time} {event.title}
+                      {event.time} {event.title || event.clientName}
                     </div>
                   );
                 })}

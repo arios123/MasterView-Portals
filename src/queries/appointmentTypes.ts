@@ -1,9 +1,16 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockAppointmentTypes } from '@/utils/mockData';
 import { CalendarAppointmentType } from '@/types/calendar';
 
 export const appointmentTypesQueries = {
   // Fetch all appointment types for a workspace
   async getByWorkspace(workspaceId: string): Promise<CalendarAppointmentType[]> {
+    if (isDemoMode()) {
+      return getMockAppointmentTypes();
+    }
+
+    // COMMENTED OUT IN DEMO MODE - using mock data instead
     const { data, error } = await supabase
       .from('calendar_appointment_types')
       .select('*')

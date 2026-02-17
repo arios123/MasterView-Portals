@@ -1,14 +1,23 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Project } from '@/types';
-import { fetchClientAssignments } from './clientAssignments';
-import { fetchProjectCrewAssignments } from './projectCrewAssignments';
-import { logUpdate, logDelete } from '@/lib/auditLog';
-import { getMaterialsTaxRate } from './workspaces';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockDbProjects, getMockClients } from '@/utils/mockData';
 
 /**
  * Fetch projects created by a specific user
  */
 export const fetchUserProjects = async (userId: string, workspaceId: string, limit = 50, offset = 0) => {
+  if (isDemoMode()) {
+    // Return mock projects with client names attached
+    const mockProjects = getMockDbProjects();
+    const mockClients = getMockClients();
+    return mockProjects.map(project => ({
+      ...project,
+      clients: { name: mockClients.find(c => c.client_id === project.client_id)?.name || 'Unknown Client' }
+    }));
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from("projects")
     .select("*, clients(name)")
@@ -25,13 +34,16 @@ export const fetchUserProjects = async (userId: string, workspaceId: string, lim
  * Calculate project totals from active version and change orders
  */
 export const calculateProjectTotals = async (projectId: string, workspaceId: string) => {
+  if (isDemoMode()) {
+    // In demo mode, return mock totals
+    return { totalCost: 0, totalPaid: 0 };
+  }
+
   let totalCost = 0;
   let totalPaid = 0;
 
-  // Get tax rate for the workspace
-  const taxRate = await getMaterialsTaxRate(workspaceId);
-
   // Get project with active version
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data: projectData, error: projectError } = await (supabase as any)
     .from("projects")
     .select("active_version")
@@ -44,6 +56,7 @@ export const calculateProjectTotals = async (projectId: string, workspaceId: str
   }
 
   // Calculate from active version
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data: activeVersion } = await (supabase as any)
     .from("project_versions")
     .select("version_id, multiplier")
@@ -51,11 +64,13 @@ export const calculateProjectTotals = async (projectId: string, workspaceId: str
     .maybeSingle();
 
   if (activeVersion) {
+    // COMMENTED OUT IN DEMO MODE - using mock data instead
     const { data: laborItems } = await (supabase as any)
       .from("version_labor")
       .select("quantity, price")
       .eq("version_id", activeVersion.version_id);
 
+    // COMMENTED OUT IN DEMO MODE - using mock data instead
     const { data: materialItems } = await (supabase as any)
       .from("version_materials")
       .select("quantity, price, waste_pct")
@@ -66,12 +81,13 @@ export const calculateProjectTotals = async (projectId: string, workspaceId: str
       const qtyWithWaste = item.quantity * (1 + (item.waste_pct || 0) / 100);
       return sum + qtyWithWaste * item.price;
     }, 0);
-    const tax = materialCost * taxRate;
+    const tax = materialCost * 0.06;
     const multiplier = Number(activeVersion.multiplier) || 1;
     totalCost = (laborCost + materialCost + tax) * multiplier;
   }
 
   // Add active change orders
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data: changeOrders } = await (supabase as any)
     .from("project_versions")
     .select("version_id, multiplier")
@@ -81,11 +97,13 @@ export const calculateProjectTotals = async (projectId: string, workspaceId: str
 
   if (changeOrders && changeOrders.length > 0) {
     for (const co of changeOrders) {
+      // COMMENTED OUT IN DEMO MODE - using mock data instead
       const { data: coLabor } = await (supabase as any)
         .from("version_labor")
         .select("quantity, price")
         .eq("version_id", co.version_id);
 
+      // COMMENTED OUT IN DEMO MODE - using mock data instead
       const { data: coMaterials } = await (supabase as any)
         .from("version_materials")
         .select("quantity, price, waste_pct")
@@ -96,20 +114,22 @@ export const calculateProjectTotals = async (projectId: string, workspaceId: str
         const qtyWithWaste = item.quantity * (1 + (item.waste_pct || 0) / 100);
         return sum + qtyWithWaste * item.price;
       }, 0);
-      const coTax = coMaterialCost * taxRate;
+      const coTax = coMaterialCost * 0.06;
       const coMultiplier = Number(co.multiplier) || 1;
       totalCost += (coLaborCost + coMaterialCost + coTax) * coMultiplier;
     }
   }
 
-  // Get total paid (incoming payments) — payments table holds incoming only; type is payment method (Check, Cash, etc.)
+  // Get total paid (incoming payments)
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data: payments } = await (supabase as any)
     .from("payments")
     .select("amount")
     .eq("project_id", projectId)
+    .eq("type", "I")
     .eq("workspace_id", workspaceId);
 
-  totalPaid = (payments || []).reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+  totalPaid = (payments || []).reduce((sum, payment) => sum + payment.amount, 0);
 
   return { totalCost, totalPaid };
 };
@@ -131,7 +151,8 @@ export const mapProjectWithTotals = async (dbProject: any, workspaceId: string):
   }
   
   // If still unknown and we have client_id, try to fetch it
-  if (clientName === "Unknown Client" && dbProject.client_id) {
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
+  if (clientName === "Unknown Client" && dbProject.client_id && !isDemoMode()) {
     try {
       const { data: clientData } = await (supabase as any)
         .from("clients")
@@ -148,32 +169,13 @@ export const mapProjectWithTotals = async (dbProject: any, workspaceId: string):
     }
   }
 
-  // Fetch crew for this project (project-level crew assignments)
-  let crew = "No crew assigned";
-  if (dbProject.project_id) {
-    try {
-      const crewAssignments = await fetchProjectCrewAssignments(dbProject.project_id, workspaceId);
-      const crewMembers = crewAssignments
-        .map((a: any) => a.user)
-        .filter(Boolean)
-        .map((user: any) => user.name || user.email || "Unknown")
-        .filter(Boolean);
-      
-      if (crewMembers.length > 0) {
-        crew = crewMembers.join(", ");
-      }
-    } catch (error) {
-      console.error("Error fetching crew for project:", error);
-    }
-  }
-
   return {
     id: dbProject.project_id,
     clientId: dbProject.client_id || "",
     clientName: clientName,
     project: dbProject.name || "Untitled Project",
     residence: dbProject.address || "No address provided",
-    crew: crew,
+    crew: "TBD",
     note: dbProject.notes || "No notes",
     phaseIndex: 0,
     paid: totalPaid,
@@ -182,7 +184,7 @@ export const mapProjectWithTotals = async (dbProject: any, workspaceId: string):
     dueStage: "TBD",
     status: dbProject.status || null,
     assignedUserId: dbProject.created_by || undefined,
-    quickNote: dbProject.quick_note || "",
+    quickNote: "",
   };
 };
 
@@ -190,6 +192,18 @@ export const mapProjectWithTotals = async (dbProject: any, workspaceId: string):
  * Fetch a single project by ID
  */
 export const fetchProjectById = async (projectId: string, workspaceId: string) => {
+  if (isDemoMode()) {
+    const mockProjects = getMockDbProjects();
+    const mockClients = getMockClients();
+    const project = mockProjects.find(p => p.project_id === projectId);
+    if (!project) return null;
+    return {
+      ...project,
+      clients: { name: mockClients.find(c => c.client_id === project.client_id)?.name || 'Unknown Client' }
+    };
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from("projects")
     .select("*, clients(name)")
@@ -202,9 +216,38 @@ export const fetchProjectById = async (projectId: string, workspaceId: string) =
 };
 
 /**
+ * Fetch all projects for a specific client
+ */
+export const fetchProjectsByClient = async (clientId: string, workspaceId: string) => {
+  if (isDemoMode()) {
+    const mockProjects = getMockDbProjects();
+    return mockProjects.filter(p => p.client_id === clientId);
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
+  const { data, error } = await (supabase as any)
+    .from("projects")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+/**
  * Fetch projects for a specific client
  */
 export const fetchClientProjects = async (clientId: string, workspaceId: string, limit = 50, offset = 0) => {
+  if (isDemoMode()) {
+    const mockProjects = getMockDbProjects();
+    return mockProjects
+      .filter(p => p.client_id === clientId)
+      .slice(offset, offset + limit);
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from("projects")
     .select("*")
@@ -222,7 +265,7 @@ export const fetchClientProjects = async (clientId: string, workspaceId: string,
  * Accepts either status name (string) or status_id (string)
  * If status name is provided, looks up the status_id first
  */
-export const updateProjectStatus = async (projectId: string, status: string | null, workspaceId: string, userId?: string) => {
+export const updateProjectStatus = async (projectId: string, status: string | null, workspaceId: string) => {
   let statusId: string | null = null;
   
   // If status is provided, look up the status_id
@@ -238,14 +281,6 @@ export const updateProjectStatus = async (projectId: string, status: string | nu
     statusId = statusData?.id || null;
   }
 
-  // Fetch before data for audit log
-  const { data: beforeData } = await (supabase as any)
-    .from("projects")
-    .select("*")
-    .eq("project_id", projectId)
-    .eq("workspace_id", workspaceId)
-    .maybeSingle();
-
   // Update using status_id - trigger will sync the status text field
   const { data, error } = await (supabase as any)
     .from("projects")
@@ -255,19 +290,17 @@ export const updateProjectStatus = async (projectId: string, status: string | nu
     .select();
 
   if (error) throw error;
-
-  // Log audit event for project status change
-  if (userId && workspaceId && beforeData && data && data.length > 0) {
-    await logUpdate(workspaceId, userId, 'projects', projectId, beforeData, data[0], 'Projects');
-  }
-
   return data;
 };
 
 /**
- * Update project quick_note
+ * Update project quick note
  */
-export const updateProjectQuickNote = async (projectId: string, quickNote: string, workspaceId: string, userId?: string) => {
+export const updateProjectQuickNote = async (projectId: string, quickNote: string, workspaceId: string, _userId?: string) => {
+  if (isDemoMode()) {
+    return; // No-op in demo; UI still updates via local state in Index
+  }
+
   const updateData: any = {
     quick_note: quickNote || null,
   };
@@ -286,20 +319,31 @@ export const updateProjectQuickNote = async (projectId: string, quickNote: strin
 /**
  * Update project notes
  */
-export const updateProjectNotes = async (projectId: string, notes: string, workspaceId: string, userId?: string) => {
-  const updateData: any = {
-    notes: notes || null,
-  };
+export const updateProjectNotes = async (projectId: string, notes: string, workspaceId: string, _userId?: string) => {
+  if (isDemoMode()) return;
 
+  const updateData: any = { notes: notes || null };
   const { data, error } = await (supabase as any)
     .from("projects")
     .update(updateData)
     .eq("project_id", projectId)
     .eq("workspace_id", workspaceId)
     .select();
-
   if (error) throw error;
   return data;
+};
+
+/**
+ * Delete a project. In demo mode, no-op.
+ */
+export const deleteProject = async (projectId: string, workspaceId: string, _userId?: string) => {
+  if (isDemoMode()) return;
+  const { error } = await (supabase as any)
+    .from("projects")
+    .delete()
+    .eq("project_id", projectId)
+    .eq("workspace_id", workspaceId);
+  if (error) throw error;
 };
 
 /**
@@ -335,32 +379,13 @@ export const loadProjectById = async (projectId: string, workspaceId: string, cl
 
     const { totalCost, totalPaid } = await calculateProjectTotals(projectId, workspaceId);
 
-    // Fetch crew for this project (project-level crew assignments)
-    let crew = "No crew assigned";
-    if (projectData.project_id) {
-      try {
-        const crewAssignments = await fetchProjectCrewAssignments(projectData.project_id, workspaceId);
-        const crewMembers = crewAssignments
-          .map((a: any) => a.user)
-          .filter(Boolean)
-          .map((user: any) => user.name || user.email || "Unknown")
-          .filter(Boolean);
-        
-        if (crewMembers.length > 0) {
-          crew = crewMembers.join(", ");
-        }
-      } catch (error) {
-        console.error("Error fetching crew for project:", error);
-      }
-    }
-
     return {
       id: projectData.project_id,
       clientId: clientId || "",
       clientName: clientName,
       project: projectData.name || "Untitled Project",
       residence: projectData.address || "No address provided",
-      crew: crew,
+      crew: "TBD",
       note: projectData.notes || "",
       phaseIndex: 0,
       paid: totalPaid,
@@ -369,71 +394,11 @@ export const loadProjectById = async (projectId: string, workspaceId: string, cl
       dueStage: "TBD",
       status: projectData.status || null,
       assignedUserId: projectData.created_by || undefined,
-      quickNote: projectData.quick_note || "",
+      quickNote: "",
     };
   } catch (error) {
     console.error("Error loading project:", error);
     return null;
   }
-};
-
-/**
- * Record that the current user just opened this project (for "last used" sorting in Projects tab).
- * Upserts into project_last_used so the project appears at the top of the list for this user.
- */
-export const touchProjectLastUsed = async (
-  userId: string,
-  projectId: string,
-  workspaceId: string
-): Promise<void> => {
-  const { error } = await (supabase as any)
-    .from("project_last_used")
-    .upsert(
-      {
-        user_id: userId,
-        project_id: projectId,
-        workspace_id: workspaceId,
-        last_used_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,project_id" }
-    );
-
-  if (error) {
-    console.error("Error touching project last used:", error);
-  }
-};
-
-/**
- * Delete a project. This is irreversible - the project and all associated data
- * (versions, payments, crew assignments, etc.) will be permanently deleted.
- */
-export const deleteProject = async (
-  projectId: string,
-  workspaceId: string,
-  userId?: string
-) => {
-  const { data: beforeData, error: fetchError } = await (supabase as any)
-    .from("projects")
-    .select("*")
-    .eq("project_id", projectId)
-    .eq("workspace_id", workspaceId)
-    .maybeSingle();
-
-  if (fetchError) throw fetchError;
-  if (!beforeData) throw new Error('Project not found');
-
-  const { error } = await (supabase as any)
-    .from("projects")
-    .delete()
-    .eq("project_id", projectId)
-    .eq("workspace_id", workspaceId);
-
-  if (error) throw error;
-
-  if (userId && beforeData) {
-    await logDelete(workspaceId, userId, 'projects', projectId, beforeData, 'Projects');
-  }
-
-  return { success: true };
 };
 

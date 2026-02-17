@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { isDemoMode } from '@/utils/demoMode';
 
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
@@ -17,6 +18,14 @@ export default function CheckoutSuccess() {
   const [checking, setChecking] = useState(true);
 
   const sessionId = searchParams.get('session_id');
+
+  // Redirect away from billing in demo mode
+  useEffect(() => {
+    if (isDemoMode()) {
+      navigate('/projects', { replace: true });
+      return;
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (!user) {

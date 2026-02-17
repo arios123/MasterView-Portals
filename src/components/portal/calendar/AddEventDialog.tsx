@@ -42,10 +42,10 @@ export function AddEventDialog({
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
   const { members: workspaceMembers } = useWorkspaceMembers(currentWorkspace?.id);
-  
-  const [formData, setFormData] = useState<EventFormData>({ 
+
+  const [formData, setFormData] = useState<EventFormData>({
     time: '09:00',
-    date: initialDate 
+    date: initialDate,
   });
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -56,19 +56,16 @@ export function AddEventDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      setFormData({ 
-        time: '09:00', 
-        date: initialDate 
+      setFormData({
+        time: '09:00',
+        date: initialDate,
       });
       setSelectedClientId('');
       setSelectedProjectId('');
       setIsNewProject(false);
-      
-      // Auto-add current user as attendee if they're a workspace member (optional)
+
       if (user && workspaceMembers.length > 0) {
-        const currentUserMember = workspaceMembers.find(
-          (m) => m.user_id === user.id
-        );
+        const currentUserMember = workspaceMembers.find((m) => m.user_id === user.id);
         if (currentUserMember) {
           setSelectedAttendeeMemberIds([currentUserMember.id]);
         } else {
@@ -95,8 +92,7 @@ export function AddEventDialog({
       address: undefined,
       projectType: undefined,
     }));
-    
-    // Notify parent so it can fetch projects for this client
+
     onClientSelect(clientId);
   };
 
@@ -131,14 +127,11 @@ export function AddEventDialog({
     }
   };
 
-  const handleClientCreated = (clientId: string) => {
-    // Close the new client dialog
+  const handleClientCreated = () => {
     setIsNewClientDialogOpen(false);
-    // Refresh the client list
     if (onClientCreated) {
       onClientCreated();
     }
-    // Note: We don't auto-select the new client as per requirements
   };
 
   return (
@@ -182,9 +175,7 @@ export function AddEventDialog({
                 }
               }}
               onRemoveMember={(memberId) => {
-                setSelectedAttendeeMemberIds(
-                  selectedAttendeeMemberIds.filter((id) => id !== memberId)
-                );
+                setSelectedAttendeeMemberIds(selectedAttendeeMemberIds.filter((id) => id !== memberId));
               }}
               disabled={isCreating || isCreatingProject}
               currentUserId={user?.id}
@@ -238,14 +229,13 @@ export function AddEventDialog({
               {isCreatingProject
                 ? 'Creating Project...'
                 : isCreating
-                ? 'Creating Event...'
-                : 'Create Event'}
+                  ? 'Creating Event...'
+                  : 'Create Event'}
             </Button>
           </div>
         </div>
       </DialogContent>
 
-      {/* Nested New Client Dialog */}
       <NewClientDialog
         open={isNewClientDialogOpen}
         onOpenChange={setIsNewClientDialogOpen}

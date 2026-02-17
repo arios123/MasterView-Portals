@@ -1,10 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { EventItem } from '@/types';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockCalendarEvents } from '@/utils/mockData';
 
 /**
  * Fetch calendar events for a workspace
  */
 export const fetchCalendarEvents = async (workspaceId: string, limit = 200, offset = 0) => {
+  if (isDemoMode()) {
+    const mockEvents = getMockCalendarEvents();
+    return mockEvents.slice(offset, offset + limit);
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from('calendar_events')
     .select('*')
@@ -16,15 +24,14 @@ export const fetchCalendarEvents = async (workspaceId: string, limit = 200, offs
 
   return (data || []).map((event: any) => ({
     id: event.id,
-    clientId: event.client_id || "",
+    title: event.title ?? '',
+    clientId: event.client_id,
     clientName: event.client_name,
-    projectType: event.project_type || "",
+    projectId: event.project_id,
+    projectType: event.project_type,
     appointmentTypeId: event.appointment_type_id,
-    address: event.address || "",
-    phone: event.phone || "",
-    email: event.email || "",
+    address: event.address,
     assignedTo: event.assigned_to || [],
-    notes: event.notes || "",
     date: event.event_date,
     time: event.event_time,
   } as EventItem));

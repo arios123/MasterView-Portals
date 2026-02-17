@@ -1,85 +1,76 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasAcceptedLatestTerms, acceptTerms } from '@/queries/users';
 import { CURRENT_TERMS_VERSION } from '@/utils/termsUtils';
 import { TermsConsentDialog } from './TermsConsentDialog';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface TermsCheckGateProps {
   children: React.ReactNode;
 }
 
+const DEMO_TERMS_ACCEPTED_KEY = 'demo_terms_accepted';
+
 /**
  * Component that checks if user has accepted latest terms and shows modal if not
  * Blocks access until terms are accepted
- * Checks terms on: mount, route changes, and window focus events
+ * In demo mode, uses sessionStorage instead of database
  */
 export function TermsCheckGate({ children }: TermsCheckGateProps) {
   const { user, loading: authLoading } = useAuth();
-  const location = useLocation();
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [hasAccepted, setHasAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const isCheckingRef = useRef(false);
+  const demoMode = isDemoMode();
 
-  // Extract check logic into a reusable function
-  const checkTerms = useCallback(async () => {
-    // Prevent concurrent checks
-    if (isCheckingRef.current || authLoading || !user) {
-      if (!authLoading && !user) {
+  useEffect(() => {
+    const checkTerms = async () => {
+      // In demo mode, check sessionStorage
+      if (demoMode) {
+        const accepted = sessionStorage.getItem(DEMO_TERMS_ACCEPTED_KEY) === 'true';
+        setHasAccepted(accepted);
+        if (!accepted) {
+          setShowTermsModal(true);
+        }
+        setCheckingTerms(false);
+        return;
+      }
+
+      // Production mode: check database
+      if (authLoading || !user) {
+        setCheckingTerms(false);
+        return;
+      }
+
+      try {
+        const accepted = await hasAcceptedLatestTerms(user.id, CURRENT_TERMS_VERSION);
+        setHasAccepted(accepted);
+        
+        if (!accepted) {
+          setShowTermsModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking terms acceptance:', error);
+        // On error, allow access (fail open) but log the error
+        setHasAccepted(true);
+      } finally {
         setCheckingTerms(false);
       }
+    };
+
+    checkTerms();
+  }, [user, authLoading, demoMode]);
+
+  const handleAcceptTerms = async () => {
+    // In demo mode, store in sessionStorage
+    if (demoMode) {
+      sessionStorage.setItem(DEMO_TERMS_ACCEPTED_KEY, 'true');
+      setHasAccepted(true);
+      setShowTermsModal(false);
       return;
     }
 
-    isCheckingRef.current = true;
-    setCheckingTerms(true);
-
-    try {
-      const accepted = await hasAcceptedLatestTerms(user.id, CURRENT_TERMS_VERSION);
-      setHasAccepted(accepted);
-      
-      if (!accepted) {
-        setShowTermsModal(true);
-      }
-    } catch (error) {
-      console.error('Error checking terms acceptance:', error);
-      // On error, allow access (fail open) but log the error
-      setHasAccepted(true);
-    } finally {
-      setCheckingTerms(false);
-      isCheckingRef.current = false;
-    }
-  }, [user, authLoading]);
-
-  // Check terms on mount and when user/authLoading changes
-  useEffect(() => {
-    checkTerms();
-  }, [checkTerms]);
-
-  // Check terms on route changes (navigation within dashboard)
-  // But only if terms haven't been accepted yet - don't block navigation if already accepted
-  useEffect(() => {
-    if (!authLoading && user && !hasAccepted) {
-      checkTerms();
-    }
-  }, [location.pathname, checkTerms, authLoading, user, hasAccepted]);
-
-  // Check terms when window regains focus (user switches back to tab)
-  useEffect(() => {
-    const handleFocus = () => {
-      if (!authLoading && user) {
-        checkTerms();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [checkTerms, authLoading, user]);
-
-  const handleAcceptTerms = async () => {
+    // Production mode: store in database
     if (!user) return;
 
     try {
@@ -94,9 +85,8 @@ export function TermsCheckGate({ children }: TermsCheckGateProps) {
     }
   };
 
-  // Show loading state only while checking auth or initial terms check
-  // Don't block navigation if terms are already accepted
-  if (authLoading || (checkingTerms && !hasAccepted)) {
+  // Show loading state while checking auth or terms
+  if (authLoading || checkingTerms) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-slate-600">Loading...</div>

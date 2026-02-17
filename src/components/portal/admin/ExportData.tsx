@@ -52,9 +52,9 @@ export function ExportData() {
       const csv = csvLines.join('\n');
       downloadCsv(csv, 'clients-export.csv');
       toast.success(`Exported ${rows.length} client(s)`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Export clients error:', err);
-      toast.error(err?.message || 'Failed to export clients');
+      toast.error(err instanceof Error ? err.message : 'Failed to export clients');
     } finally {
       setExportingClients(false);
     }
@@ -78,9 +78,9 @@ export function ExportData() {
       const csv = csvLines.join('\n');
       downloadCsv(csv, 'items-export.csv');
       toast.success(`Exported ${rows.length} item(s)`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Export items error:', err);
-      toast.error(err?.message || 'Failed to export items');
+      toast.error(err instanceof Error ? err.message : 'Failed to export items');
     } finally {
       setExportingItems(false);
     }
@@ -119,9 +119,9 @@ export function ExportData() {
       const csv = csvLines.join('\n');
       downloadCsv(csv, 'projects-export.csv');
       toast.success(`Exported ${rows.length} project(s)`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Export projects error:', err);
-      toast.error(err?.message || 'Failed to export projects');
+      toast.error(err instanceof Error ? err.message : 'Failed to export projects');
     } finally {
       setExportingProjects(false);
     }

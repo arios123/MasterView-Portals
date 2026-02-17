@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useOnboarding } from "@/contexts/OnboardingContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,9 +20,6 @@ interface MobileSidebarProps {
   onTabChange: (tab: string) => void;
   availableTabs: string[];
   onSignOut: () => void;
-  externalOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  hasActiveSubscription?: boolean; // If false, hide navigation tabs (mobile only)
 }
 
 const tabIcons: Record<string, any> = {
@@ -46,30 +42,11 @@ const tabToPermission: Record<string, string> = {
   Admin: 'tab.admin.view',
 };
 
-export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut, externalOpen, onOpenChange, hasActiveSubscription = true }: MobileSidebarProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
+export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut }: MobileSidebarProps) {
+  const [open, setOpen] = useState(false);
   const { can } = usePermissions();
   const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
-  const { state: onboardingState } = useOnboarding();
-  
-  // Check if we're in an onboarding step that needs the drawer open
-  const isOnboardingDrawerStep = onboardingState.active && [1, 6, 7].includes(onboardingState.step);
-  
-  // Use external control if provided, otherwise use internal state
-  const open = externalOpen !== undefined ? externalOpen : internalOpen;
-  const setOpen = (newOpen: boolean) => {
-    // During onboarding drawer steps, prevent closing the drawer
-    if (isOnboardingDrawerStep && !newOpen) {
-      return; // Don't allow closing
-    }
-    
-    if (onOpenChange) {
-      onOpenChange(newOpen);
-    } else {
-      setInternalOpen(newOpen);
-    }
-  };
 
   // Filter tabs based on permissions
   const visibleTabs = availableTabs.filter((tab) => {
@@ -104,23 +81,8 @@ export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut
       </Button>
 
       {/* Slide-out Sidebar */}
-      <Sheet open={open} onOpenChange={setOpen} modal={!isOnboardingDrawerStep}>
-        <SheetContent 
-          side="left" 
-          className="w-[280px] p-0"
-          onInteractOutside={(e) => {
-            // Prevent closing during onboarding drawer steps
-            if (isOnboardingDrawerStep) {
-              e.preventDefault();
-            }
-          }}
-          onEscapeKeyDown={(e) => {
-            // Prevent closing with Escape during onboarding drawer steps
-            if (isOnboardingDrawerStep) {
-              e.preventDefault();
-            }
-          }}
-        >
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="left" className="w-[280px] p-0">
           <SheetHeader className="p-4 border-b">
             <SheetTitle className="text-lg font-bold">
               {currentWorkspace?.name || "Select Workspace"}
@@ -168,11 +130,10 @@ export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut
               </DropdownMenu>
             </div>
 
-            {/* Navigation Tabs - Only show if subscription is active (mobile only) */}
+            {/* Navigation Tabs */}
             <div className="flex-1 p-2">
               <nav className="space-y-1">
-                {/* Only show navigation tabs if subscription is active */}
-                {hasActiveSubscription && visibleTabs.map((tab) => {
+                {visibleTabs.map((tab) => {
                   const Icon = tabIcons[tab];
                   const isActive = activeTab === tab;
 
@@ -185,7 +146,6 @@ export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut
                         isActive && "bg-slate-100 dark:bg-slate-800 font-semibold"
                       )}
                       onClick={() => handleTabClick(tab)}
-                      data-onboarding-highlight={tab === 'Admin' ? 'admin-tab' : tab === 'Projects' ? 'projects-tab' : undefined}
                     >
                       {Icon && <Icon className="h-4 w-4 mr-2" />}
                       <span>{tab}</span>
@@ -193,7 +153,7 @@ export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut
                   );
                 })}
                 
-                {/* Logout Button - Always visible */}
+                {/* Logout Button */}
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-slate-600 hover:text-red-600 mt-1"

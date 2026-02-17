@@ -3,9 +3,6 @@ import { Plus, Trash2, GripVertical, Edit2, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -165,12 +162,7 @@ function SortableDocumentGroup({ group, onUpdate, onDelete, canEdit }: SortableD
   );
 }
 
-interface DocumentGroupsSectionProps {
-  isCollapsible?: boolean;
-  isOpen?: boolean;
-}
-
-export function DocumentGroupsSection({ isCollapsible = false, isOpen = true }: DocumentGroupsSectionProps = {}) {
+export function DocumentGroupsSection() {
   const { currentWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -345,8 +337,16 @@ export function DocumentGroupsSection({ isCollapsible = false, isOpen = true }: 
     }
   };
 
-  const cardContent = (
-    <CardContent className="space-y-4">
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Groups</CardTitle>
+          <CardDescription>
+            Manage document template types for your workspace. Each group represents a type of document template that can be uploaded and used for document generation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <Can permission="tab.admin_workspacesetup.edit">
             <div className="flex gap-2">
               <Input
@@ -390,56 +390,7 @@ export function DocumentGroupsSection({ isCollapsible = false, isOpen = true }: 
               </div>
             )}
           </div>
-    </CardContent>
-  );
-
-  if (isCollapsible) {
-    return (
-      <>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <CardTitle>Document Groups</CardTitle>
-                  <CardDescription>
-                    Manage document template types for your workspace. Each group represents a type of document template that can be uploaded and used for document generation.
-                  </CardDescription>
-                </div>
-                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isOpen && "transform rotate-180")} />
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            {cardContent}
-          </CollapsibleContent>
-        </Card>
-
-        <ConfirmDeleteDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          onConfirm={handleConfirmDelete}
-          title="Delete Document Group"
-          description={
-            groupToDelete
-              ? `Are you sure you want to delete "${groupToDelete.name}"? This will also delete ${groupToDelete.templateCount} template file(s) associated with this group. This action cannot be undone.`
-              : ''
-          }
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Document Groups</CardTitle>
-          <CardDescription>
-            Manage document template types for your workspace. Each group represents a type of document template that can be uploaded and used for document generation.
-          </CardDescription>
-        </CardHeader>
-        {cardContent}
+        </CardContent>
       </Card>
 
       <ConfirmDeleteDialog

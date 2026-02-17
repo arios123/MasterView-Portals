@@ -35,11 +35,12 @@ export function TermsConsentDialog({
       setLoading(true);
       loadTermsContent()
         .then((content) => {
-          setTermsContent(content);
+          setTermsContent(content || 'Terms and conditions content could not be loaded.');
           setLoading(false);
         })
         .catch((error) => {
           console.error('Failed to load terms:', error);
+          setTermsContent('Terms and conditions content could not be loaded. Please contact support.');
           setLoading(false);
         });
     }
@@ -114,7 +115,7 @@ export function TermsConsentDialog({
                 </div>
                 
                 {/* Agree button at bottom of scrollable content */}
-                <div className="border-t pt-4 pb-2 space-y-3">
+                <div className="border-t pt-4 pb-2 space-y-3 bg-white">
                   <Button
                     onClick={handleAccept}
                     disabled={!hasScrolledToBottom || loading}

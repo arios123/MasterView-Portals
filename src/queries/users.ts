@@ -1,10 +1,22 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/utils/demoMode';
+import { getMockUserRecord } from '@/utils/mockData';
 
 /**
  * Fetch user data by user ID
  * Note: This fetches basic user info. For workspace-specific role, use workspace_members table.
  */
 export const fetchUserById = async (userId: string) => {
+  if (isDemoMode()) {
+    const mockUser = getMockUserRecord();
+    return {
+      name: mockUser.name,
+      email: mockUser.email,
+      user_id: mockUser.user_id,
+    };
+  }
+
+  // COMMENTED OUT IN DEMO MODE - using mock data instead
   const { data, error } = await (supabase as any)
     .from("users")
     .select("name, email, user_id")
@@ -269,11 +281,17 @@ export const fetchUsersByIds = async (userIds: string[], workspaceId?: string) =
  * @param userId - The user ID
  * @param currentVersion - The current terms version to check against
  * @returns true if user has accepted the current version, false otherwise
+ * In demo mode, checks sessionStorage instead of database
  */
 export const hasAcceptedLatestTerms = async (
   userId: string,
   currentVersion: string
 ): Promise<boolean> => {
+  // In demo mode, check sessionStorage (no database calls)
+  if (isDemoMode()) {
+    return sessionStorage.getItem('demo_terms_accepted') === 'true';
+  }
+
   const { data, error } = await (supabase as any)
     .from("terms_acceptances")
     .select("terms_version")
@@ -320,8 +338,15 @@ export const getUserAcceptedTermsVersion = async (
  * Record terms and conditions acceptance for a user
  * @param userId - The user ID
  * @param termsVersion - The version of terms accepted (e.g., "v1")
+ * In demo mode, stores in sessionStorage instead of database
  */
 export const acceptTerms = async (userId: string, termsVersion: string = "v1") => {
+  // In demo mode, store in sessionStorage (no database calls)
+  if (isDemoMode()) {
+    sessionStorage.setItem('demo_terms_accepted', 'true');
+    return { user_id: userId, terms_version: termsVersion, accepted_at: new Date().toISOString() };
+  }
+
   const now = new Date().toISOString();
   
   // Use upsert to either insert new acceptance or update existing one

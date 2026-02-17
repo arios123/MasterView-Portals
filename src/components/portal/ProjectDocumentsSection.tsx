@@ -85,8 +85,15 @@ export function ProjectDocumentsSection({
     }
   }, [documentTypes, selectedTemplate]);
 
-  // Always fetch change orders (not just when required)
-  const { changeOrders } = useDocumentChangeOrders(projectId, true);
+  // Fetch change orders when needed
+  const { changeOrders } = useDocumentChangeOrders(projectId, requiresChangeOrderForTemplate);
+
+  // Clear change order selection when switching away from change order document types
+  useEffect(() => {
+    if (!requiresChangeOrderForTemplate) {
+      setSelectedChangeOrderId('');
+    }
+  }, [requiresChangeOrderForTemplate]);
 
   // Fetch generated documents - get all slugs from configured document groups for filtering
   const allDocumentSlugs = useMemo(() => configuredGroups.map(g => g.slug), [configuredGroups]);
@@ -106,21 +113,8 @@ export function ProjectDocumentsSection({
 
   // Document generation
   const { generateDocument, isGenerating } = useDocumentGeneration(refetch);
-  
-  // Validation: check if change order is required but not selected
-  const changeOrderError = useMemo(() => {
-    if (requiresChangeOrderForTemplate && !selectedChangeOrderId) {
-      return 'Please select a change order to generate this document.';
-    }
-    return null;
-  }, [requiresChangeOrderForTemplate, selectedChangeOrderId]);
 
   const handleGenerateDocument = async () => {
-    // Validate change order selection
-    if (requiresChangeOrderForTemplate && !selectedChangeOrderId) {
-      return; // Error message will be shown via changeOrderError
-    }
-    
     const success = await generateDocument({
       documentName,
       selectedTemplate,
@@ -175,7 +169,6 @@ export function ProjectDocumentsSection({
               changeOrders={changeOrders}
               canGenerate={canGenerateDocuments}
               isGenerating={isGenerating}
-              changeOrderError={changeOrderError}
             />
           )}
 

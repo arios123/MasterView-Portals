@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
 import { LineItem } from '@/types';
-import { useWorkspaceTaxRate } from '@/hooks/useWorkspaceTaxRate';
 
 export function useQuoteCalculations(items: LineItem[], multiplier: number) {
-  const { taxRate } = useWorkspaceTaxRate();
-  
   const rows = useMemo(
     () =>
       items.map((r) => {
@@ -19,7 +16,7 @@ export function useQuoteCalculations(items: LineItem[], multiplier: number) {
   const { laborSub, matSub, tax, sub, grand } = useMemo(() => {
     const laborTotal = rows.filter((r) => r.kind === 'labor').reduce((a, r) => a + r.total, 0);
     const matTotal = rows.filter((r) => r.kind === 'material').reduce((a, r) => a + r.total, 0);
-    const taxTotal = matTotal * taxRate;
+    const taxTotal = matTotal * 0.06;
     const subTotal = laborTotal + matTotal + taxTotal;
     const grandTotal = subTotal * multiplier;
 
@@ -30,7 +27,7 @@ export function useQuoteCalculations(items: LineItem[], multiplier: number) {
       sub: subTotal,
       grand: grandTotal,
     };
-  }, [rows, multiplier, taxRate]);
+  }, [rows, multiplier]);
 
   return {
     rows,

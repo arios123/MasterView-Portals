@@ -194,20 +194,13 @@ export function QuoteBuilder({
   };
 
   const resetToDefaults = () => {
-    // Clear cache FIRST to prevent cache from interfering
-    // Note: We do NOT call onClearEditing() here to preserve the editing version ID state
-    // We also preserve editingDraftName and latestDraftName to keep the "Editing: D1" display
     clearQuoteBuilderCache();
-    // Don't clear editingDraftName/latestDraftName - preserve editing context display
-    
-    // Reset items and other values to defaults, but preserve editing state
     setItems(() => []);
     setMultiplier(isSoldProject ? soldProjectMultiplier : 1.4);
     setPaymentSplits([40, 30, 20, 10]);
     setDraftName("");
     setEstimatedStartDate(undefined);
     setEstimatedConstructionTime(undefined);
-    
     toast.success("Reset items to default values");
   };
 
@@ -277,7 +270,6 @@ export function QuoteBuilder({
                 </span>
               )}
             </div>
-            {/* Mobile: Dropdown menu, Desktop: Individual buttons */}
             {!quoteReadOnly && (
               isMobile ? (
                 <DropdownMenu>

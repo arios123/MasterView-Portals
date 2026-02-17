@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isDemoMode } from '@/utils/demoMode';
 import { cloneDraftVersion } from '@/utils/draftCloning';
 
 interface MaterialRevision {
@@ -40,6 +41,10 @@ export function useMaterialRevisions(versionId: string | null) {
 
     const loadRevisions = async () => {
       setLoading(true);
+      if (isDemoMode()) {
+        setLoading(false);
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from('material_revisions')
@@ -81,7 +86,14 @@ export function useMaterialRevisions(versionId: string | null) {
       return false;
     }
 
+    // COMMENTED OUT IN DEMO MODE - demo is read-only
+    const { isDemoMode, blockDemoWrite } = await import('@/utils/demoMode');
+    if (blockDemoWrite('save material revisions')) {
+      return false;
+    }
+
     try {
+      // COMMENTED OUT IN DEMO MODE - demo is read-only
       // Delete existing revisions for this version
       const { error: deleteError } = await supabase
         .from('material_revisions')
@@ -90,6 +102,7 @@ export function useMaterialRevisions(versionId: string | null) {
 
       if (deleteError) throw deleteError;
 
+      // COMMENTED OUT IN DEMO MODE - demo is read-only
       // Insert new revisions
       // item.linkedTo is already a version_materials.id, so we use it directly
       if (items.length > 0) {
@@ -106,6 +119,7 @@ export function useMaterialRevisions(versionId: string | null) {
           notes: item.notes || null,
         }));
 
+        // COMMENTED OUT IN DEMO MODE - demo is read-only
         const { error: insertError } = await supabase
           .from('material_revisions')
           .insert(revisionsToInsert);
@@ -128,6 +142,11 @@ export function useMaterialRevisions(versionId: string | null) {
     if (!versionId) {
       toast.error('No version selected');
       return { success: false, error: 'No version selected' };
+    }
+
+    const { blockDemoWrite } = await import('@/utils/demoMode');
+    if (blockDemoWrite('save material revisions as new draft')) {
+      return { success: false, error: 'Disabled in demo' };
     }
 
     const { items, projectId, workspaceId, userId, draftName } = params;
@@ -177,6 +196,7 @@ export function useMaterialRevisions(versionId: string | null) {
         });
       }
 
+      // COMMENTED OUT IN DEMO MODE - demo is read-only
       // 4. Delete any existing revisions for the NEW version (shouldn't exist, but just in case)
       const { error: deleteError } = await supabase
         .from('material_revisions')
@@ -185,6 +205,7 @@ export function useMaterialRevisions(versionId: string | null) {
 
       if (deleteError) throw deleteError;
 
+      // COMMENTED OUT IN DEMO MODE - demo is read-only
       // 5. Insert new revisions for the NEW version with remapped linked_to_id
       if (items.length > 0) {
         const revisionsToInsert = items.map((item) => {
@@ -205,22 +226,12 @@ export function useMaterialRevisions(versionId: string | null) {
           };
         });
 
+        // COMMENTED OUT IN DEMO MODE - demo is read-only
         const { error: insertError } = await supabase
           .from('material_revisions')
           .insert(revisionsToInsert);
 
         if (insertError) throw insertError;
-      }
-
-      // 6. Set new draft as active_version on the project (since this creates a new draft)
-      const { error: updateActiveError } = await (supabase as any)
-        .from("projects")
-        .update({ active_version: cloneResult.newVersionId })
-        .eq("project_id", projectId);
-
-      if (updateActiveError) {
-        console.error("Error updating active version:", updateActiveError);
-        // Don't throw - the draft was created successfully
       }
 
       toast.success(`Saved as ${cloneResult.newDraftName}!`);

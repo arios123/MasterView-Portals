@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2, Edit2, X, Check, GripVertical, ChevronDown, Upload } from 'lucide-react';
 import {
   DndContext,
@@ -23,8 +23,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CompactColorPicker } from '@/components/ui/color-picker';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { isDemoMode } from '@/utils/demoMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Can } from '@/components/Can';
@@ -37,7 +37,6 @@ import { AccountabilityInfo } from '@/components/AccountabilityInfo';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
 import { PackageGroupsSection } from './PackageGroupsSection';
 import { LookbookCategoriesSection } from './LookbookCategoriesSection';
-import { LookbookDefaultQuestionsSection } from './LookbookDefaultQuestionsSection';
 import { ProgressBarConfigSection } from './ProgressBarConfigSection';
 import { DocumentGroupsSection } from './DocumentGroupsSection';
 import { DocumentGroupTabConfigurationSection } from './DocumentGroupTabConfigurationSection';
@@ -114,10 +113,11 @@ function SortableStatusItem({
               autoFocus
             />
           )}
-          <CompactColorPicker
-            color={editStatusColor}
-            onChange={setEditStatusColor}
-            disabled={!canEdit}
+          <Input
+            type="color"
+            value={editStatusColor}
+            onChange={(e) => setEditStatusColor(e.target.value)}
+            className="w-20 h-10 cursor-pointer"
           />
           <div className="flex gap-2">
             <Button
@@ -216,28 +216,27 @@ export function WorkspaceSetup() {
   const canEditAttachmentFolders = can('component.adminworkspacesetup_attachmentfolders.edit');
   const canViewCalendarAppointmentTypes = can('component.adminworkspacesetup_calendarappointmenttypes.view');
   const canEditCalendarAppointmentTypes = can('component.adminworkspacesetup_calendarappointmenttypes.edit');
-  const canViewTaxes = can('component.adminworkspacesetup_taxes.view');
-  const canEditTaxes = can('component.adminworkspacesetup_taxes.edit');
   const canViewImportClients = can('component.adminworkspacesetup_importclients.view');
   const canEditImportClients = can('component.adminworkspacesetup_importclients.edit');
+  const canViewTaxes = can('component.adminworkspacesetup_taxes.view');
+  const canEditTaxes = can('component.adminworkspacesetup_taxes.edit');
 
   // Effective edit permissions (component-level overrides tab-level)
   const projectStatusEditEnabled = canViewProjectStatus && canEditProjectStatus;
   const calendarAppointmentTypesEditEnabled = canViewCalendarAppointmentTypes && canEditCalendarAppointmentTypes;
   const taxesEditEnabled = canViewTaxes && canEditTaxes;
-  
-  // Tax rate hook
+
+  // Tax rate
   const { taxRate, updateTaxRate, loading: taxRateLoading } = useWorkspaceTaxRate();
   const [taxRateInput, setTaxRateInput] = useState<string>('');
   const [isSavingTaxRate, setIsSavingTaxRate] = useState(false);
-  
-  // Initialize tax rate input when tax rate is loaded
+
   useEffect(() => {
     if (taxRate !== undefined && !taxRateLoading) {
       setTaxRateInput((taxRate * 100).toFixed(2));
     }
   }, [taxRate, taxRateLoading]);
-  
+
   const workspaceId = currentWorkspace?.id;
   const { appointmentTypes, loading: appointmentTypesLoading, refetch: refetchAppointmentTypes } = useAppointmentTypes(workspaceId);
   const { projectStatuses, loading: projectStatusesLoading, refetch: refetchProjectStatuses } = useProjectStatuses(workspaceId);
@@ -262,12 +261,11 @@ export function WorkspaceSetup() {
   const [statusDeleteDialogOpen, setStatusDeleteDialogOpen] = useState(false);
   const [statusToDelete, setStatusToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  // Collapsible state for all sections (all start collapsed)
+  // Collapsible state for all sections
   const [isProjectStatusOpen, setIsProjectStatusOpen] = useState(false);
   const [isProgressBarOpen, setIsProgressBarOpen] = useState(false);
   const [isPackageGroupsOpen, setIsPackageGroupsOpen] = useState(false);
   const [isLookbookCategoriesOpen, setIsLookbookCategoriesOpen] = useState(false);
-  const [isLookbookDefaultQuestionsOpen, setIsLookbookDefaultQuestionsOpen] = useState(false);
   const [isDocumentGroupsOpen, setIsDocumentGroupsOpen] = useState(false);
   const [isDocumentGroupTabConfigOpen, setIsDocumentGroupTabConfigOpen] = useState(false);
   const [isAttachmentFoldersOpen, setIsAttachmentFoldersOpen] = useState(false);
@@ -281,9 +279,6 @@ export function WorkspaceSetup() {
   const [clientImportUploading, setClientImportUploading] = useState(false);
   const [pendingClients, setPendingClients] = useState<{ name: string; phone?: string; email?: string }[] | null>(null);
   const clientFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Theme section starts collapsed by default (isThemeOpen = false)
-  // No auto-expansion during onboarding
 
   const handleCreate = async () => {
     if (!workspaceId || !user?.id) return;
@@ -510,32 +505,6 @@ export function WorkspaceSetup() {
     }
   };
 
-  const handleSaveTaxRate = async () => {
-    const parsedRate = parseFloat(taxRateInput);
-    
-    // Validate input
-    if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
-      toast.error('Tax rate must be between 0 and 100');
-      return;
-    }
-
-    // Convert percentage to decimal
-    const decimalRate = parsedRate / 100;
-
-    setIsSavingTaxRate(true);
-    try {
-      await updateTaxRate(decimalRate);
-      toast.success('Tax rate updated successfully');
-    } catch (error: any) {
-      console.error('Error updating tax rate:', error);
-      toast.error(error.message || 'Failed to update tax rate');
-      // Reset to current tax rate on error
-      setTaxRateInput((taxRate * 100).toFixed(2));
-    } finally {
-      setIsSavingTaxRate(false);
-    }
-  };
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -568,60 +537,46 @@ export function WorkspaceSetup() {
     }
   };
 
-  // Parse clients CSV (name,phone,email)
-  const parseClientsCSV = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim());
-
-    // Basic row-length safeguard (similar to other CSV imports)
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].length > 500) {
-        throw new Error(`Row ${i + 1} exceeds 500 character limit (${lines[i].length} characters)`);
-      }
+  const handleSaveTaxRate = async () => {
+    const parsedRate = parseFloat(taxRateInput);
+    if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+      toast.error('Tax rate must be between 0 and 100');
+      return;
     }
+    setIsSavingTaxRate(true);
+    try {
+      await updateTaxRate(parsedRate / 100);
+      toast.success('Tax rate updated successfully');
+    } catch (error: unknown) {
+      console.error('Error updating tax rate:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update tax rate');
+      setTaxRateInput((taxRate * 100).toFixed(2));
+    } finally {
+      setIsSavingTaxRate(false);
+    }
+  };
 
+  const parseClientsCSV = (text: string) => {
     const result = Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
       transform: (value: string) => value.replace(/^[\"']|[\"']$/g, '').trim(),
     });
-
-    if (result.errors.length > 0) {
-      throw new Error(result.errors[0].message);
-    }
-
-    const data = result.data as any[];
-    if (!data.length) {
-      throw new Error('CSV file is empty');
-    }
-
+    if (result.errors.length > 0) throw new Error(result.errors[0].message);
+    const data = result.data as Record<string, string>[];
+    if (!data.length) throw new Error('CSV file is empty');
     const firstRow = data[0];
     const requiredHeaders = ['name', 'phone', 'email'];
-    const missingHeaders = requiredHeaders.filter((h) => !(h in firstRow));
-    if (missingHeaders.length > 0) {
-      throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
-    }
-
+    const missing = requiredHeaders.filter((h) => !(h in firstRow));
+    if (missing.length > 0) throw new Error(`Missing required headers: ${missing.join(', ')}`);
     const clients: { name: string; phone?: string; email?: string }[] = [];
-    const errors: string[] = [];
-
     data.forEach((row, idx) => {
-      const rowNumber = idx + 2; // account for header
       const name = (row.name || '').trim();
       const phone = (row.phone || '').trim();
       const email = (row.email || '').trim();
-
-      if (!name) {
-        errors.push(`Row ${rowNumber}: Name is required`);
-        return;
-      }
-
+      if (!name) throw new Error(`Row ${idx + 2}: Name is required`);
       clients.push({ name, phone: phone || undefined, email: email || undefined });
     });
-
-    if (errors.length > 0) {
-      throw new Error(`Validation errors:\n${errors.join('\n')}`);
-    }
-
     return clients;
   };
 
@@ -631,31 +586,24 @@ export function WorkspaceSetup() {
       event.target.value = '';
       return;
     }
-
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.name.endsWith('.csv')) {
       toast.error('Please upload a CSV file');
       event.target.value = '';
       return;
     }
-
     setClientImportUploading(true);
     try {
       const text = await file.text();
       const clients = parseClientsCSV(text);
-
-      if (!clients.length) {
-        throw new Error('No valid clients found in CSV');
-      }
-
+      if (!clients.length) throw new Error('No valid clients found in CSV');
       setPendingClients(clients);
       setIsClientImportOpen(false);
       setIsClientImportConfirmOpen(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error uploading clients CSV:', error);
-      toast.error(error?.message || 'Failed to upload clients CSV');
+      toast.error(error instanceof Error ? (error as Error).message : 'Failed to upload clients CSV');
     } finally {
       event.target.value = '';
       setClientImportUploading(false);
@@ -668,16 +616,15 @@ export function WorkspaceSetup() {
       setIsClientImportConfirmOpen(false);
       return;
     }
-
     setClientImportUploading(true);
     try {
       await bulkCreateClients(workspaceId, pendingClients, user.id);
       toast.success(`Successfully imported ${pendingClients.length} client(s)`);
       setPendingClients(null);
       setIsClientImportConfirmOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error importing clients:', error);
-      toast.error(error?.message || 'Failed to import clients');
+      toast.error(error instanceof Error ? (error as Error).message : 'Failed to import clients');
     } finally {
       setClientImportUploading(false);
     }
@@ -706,6 +653,7 @@ export function WorkspaceSetup() {
           )}
         </Can>
       </div>
+
       {/* Project Status Section */}
       <Can permission="component.adminworkspacesetup_projectstatus.view" fallback={null}>
         <Collapsible open={isProjectStatusOpen} onOpenChange={setIsProjectStatusOpen}>
@@ -745,9 +693,11 @@ export function WorkspaceSetup() {
                 <div className="space-y-2">
                   <Label className="text-xs">Color</Label>
                   <div className="flex gap-2 items-center">
-                    <CompactColorPicker
-                      color={newStatusColor}
-                      onChange={setNewStatusColor}
+                    <Input
+                      type="color"
+                      value={newStatusColor}
+                      onChange={(e) => setNewStatusColor(e.target.value)}
+                      className="h-10 w-full cursor-pointer"
                     />
                   </div>
                 </div>
@@ -802,35 +752,84 @@ export function WorkspaceSetup() {
       {/* Progress Bar Configuration Section */}
       <Can permission="component.adminworkspacesetup_progressbar.view" fallback={null}>
         <Collapsible open={isProgressBarOpen} onOpenChange={setIsProgressBarOpen}>
-          <ProgressBarConfigSection isCollapsible={true} isOpen={isProgressBarOpen} />
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Progress Bar Configuration</CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isProgressBarOpen && "transform rotate-180")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <ProgressBarConfigSection />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
         </Collapsible>
       </Can>
 
       {/* Package Groups Section */}
       <Can permission="component.adminworkspacesetup_packagegroups.view" fallback={null}>
         <Collapsible open={isPackageGroupsOpen} onOpenChange={setIsPackageGroupsOpen}>
-          <PackageGroupsSection isCollapsible={true} isOpen={isPackageGroupsOpen} />
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Package Groups</CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isPackageGroupsOpen && "transform rotate-180")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <PackageGroupsSection />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
         </Collapsible>
       </Can>
 
       {/* Lookbook Categories Section */}
       <Can permission="component.adminworkspacesetup_lookbookcategories.view" fallback={null}>
         <Collapsible open={isLookbookCategoriesOpen} onOpenChange={setIsLookbookCategoriesOpen}>
-          <LookbookCategoriesSection isCollapsible={true} isOpen={isLookbookCategoriesOpen} />
-        </Collapsible>
-      </Can>
-
-      {/* Lookbook Default Questions Section */}
-      <Can permission="component.adminworkspacesetup_lookbookdefaultquestions.view" fallback={null}>
-        <Collapsible open={isLookbookDefaultQuestionsOpen} onOpenChange={setIsLookbookDefaultQuestionsOpen}>
-          <LookbookDefaultQuestionsSection isCollapsible={true} isOpen={isLookbookDefaultQuestionsOpen} />
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Lookbook Categories</CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isLookbookCategoriesOpen && "transform rotate-180")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <LookbookCategoriesSection />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
         </Collapsible>
       </Can>
 
       {/* Document Groups Section */}
       <Can permission="component.adminworkspacesetup_documentgroups.view" fallback={null}>
         <Collapsible open={isDocumentGroupsOpen} onOpenChange={setIsDocumentGroupsOpen}>
-          <DocumentGroupsSection isCollapsible={true} isOpen={isDocumentGroupsOpen} />
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Document Groups</CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isDocumentGroupsOpen && "transform rotate-180")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <DocumentGroupsSection />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
         </Collapsible>
       </Can>
 
@@ -858,14 +857,42 @@ export function WorkspaceSetup() {
       {/* Attachment Folders Section */}
       <Can permission="component.adminworkspacesetup_attachmentfolders.view" fallback={null}>
         <Collapsible open={isAttachmentFoldersOpen} onOpenChange={setIsAttachmentFoldersOpen}>
-          <AttachmentFoldersSection isCollapsible={true} isOpen={isAttachmentFoldersOpen} />
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Attachment Folders</CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isAttachmentFoldersOpen && "transform rotate-180")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <AttachmentFoldersSection />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
         </Collapsible>
       </Can>
 
       {/* Theme Customization Section */}
       <Can permission="component.adminworkspacesetup_themecustomization.view" fallback={null}>
         <Collapsible open={isThemeOpen} onOpenChange={setIsThemeOpen}>
-          <ThemeSection isCollapsible={true} isOpen={isThemeOpen} />
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Theme Customization</CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", isThemeOpen && "transform rotate-180")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <ThemeSection />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
         </Collapsible>
       </Can>
 
@@ -908,9 +935,11 @@ export function WorkspaceSetup() {
                 <div className="space-y-2">
                   <Label className="text-xs">Color</Label>
                   <div className="flex gap-2 items-center">
-                    <CompactColorPicker
-                      color={newTypeColor}
-                      onChange={setNewTypeColor}
+                    <Input
+                      type="color"
+                      value={newTypeColor}
+                      onChange={(e) => setNewTypeColor(e.target.value)}
+                      className="h-10 w-full cursor-pointer"
                     />
                   </div>
                 </div>
@@ -951,10 +980,11 @@ export function WorkspaceSetup() {
                         autoFocus
                       />
                     )}
-                    <CompactColorPicker
-                      color={editColor}
-                      onChange={setEditColor}
-                      disabled={!canEdit}
+                    <Input
+                      type="color"
+                      value={editColor}
+                      onChange={(e) => setEditColor(e.target.value)}
+                      className="w-20 h-10 cursor-pointer"
                     />
                     <div className="flex gap-2">
                       <Button
@@ -1028,98 +1058,6 @@ export function WorkspaceSetup() {
         </Collapsible>
       </Can>
 
-      {/* Import Clients CSV Dialog */}
-      <Dialog open={isClientImportOpen} onOpenChange={setIsClientImportOpen}>
-        <DialogContent className="sm:max-w-xl md:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Import Clients from CSV</DialogTitle>
-            <DialogDescription>
-              Upload a CSV file to bulk create workspace clients.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 text-sm text-left mt-2">
-            <div className="space-y-2 text-left">
-              <p className="font-medium text-center md:text-left">Your CSV must follow this format:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Header row is required.</li>
-                <li>
-                  <code>name</code> is required. <code>phone</code> and <code>email</code> may be left blank.
-                </li>
-                <li>
-                  Clients will be created without any staff assignment. You can assign them later.
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-2">
-              <p className="font-medium">Example:</p>
-              <div className="rounded-md bg-muted px-3 py-2 font-mono text-xs overflow-x-auto border text-left">
-                <code>name,phone,email</code>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center md:text-left">
-              Tip: keep each row under 500 characters to avoid validation errors.
-            </p>
-          </div>
-          <input
-            ref={clientFileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={handleClientsCSVUpload}
-            className="hidden"
-          />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsClientImportOpen(false)}
-              disabled={clientImportUploading}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => clientFileInputRef.current?.click()}
-              className="gap-2"
-              disabled={clientImportUploading}
-            >
-              <Upload className="h-4 w-4" />
-              {clientImportUploading ? 'Uploading…' : 'Choose CSV file'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm Clients Import Dialog */}
-      <Dialog open={isClientImportConfirmOpen} onOpenChange={setIsClientImportConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Import</DialogTitle>
-            <DialogDescription>
-              {pendingClients ? (
-                <>You are about to import {pendingClients.length} client(s). Continue?</>
-              ) : (
-                'No clients to import.'
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsClientImportConfirmOpen(false)}
-              disabled={clientImportUploading}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmClientImport}
-              disabled={clientImportUploading || !pendingClients}
-            >
-              {clientImportUploading ? 'Importing…' : 'Import Clients'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Taxes Section */}
       <Can permission="component.adminworkspacesetup_taxes.view" fallback={null}>
         <Collapsible open={isTaxesOpen} onOpenChange={setIsTaxesOpen}>
@@ -1155,9 +1093,7 @@ export function WorkspaceSetup() {
                           step="0.01"
                           value={taxRateInput}
                           onChange={(e) => setTaxRateInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveTaxRate();
-                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTaxRate(); }}
                           disabled={!taxesEditEnabled || taxRateLoading || isSavingTaxRate}
                           placeholder="6.00"
                           className="w-full"
@@ -1187,6 +1123,77 @@ export function WorkspaceSetup() {
           </Card>
         </Collapsible>
       </Can>
+
+      {/* Import Clients CSV Dialog */}
+      <Dialog open={isClientImportOpen} onOpenChange={setIsClientImportOpen}>
+        <DialogContent className="sm:max-w-xl md:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Clients from CSV</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to bulk create workspace clients.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-left mt-2">
+            <div className="space-y-2 text-left">
+              <p className="font-medium text-center md:text-left">Your CSV must follow this format:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Header row is required.</li>
+                <li><code>name</code> is required. <code>phone</code> and <code>email</code> may be left blank.</li>
+                <li>Clients will be created without any staff assignment. You can assign them later.</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <p className="font-medium">Example:</p>
+              <div className="rounded-md bg-muted px-3 py-2 font-mono text-xs overflow-x-auto border text-left">
+                <code>name,phone,email</code>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center md:text-left">
+              Tip: keep each row under 500 characters to avoid validation errors.
+            </p>
+          </div>
+          <input
+            ref={clientFileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleClientsCSVUpload}
+            className="hidden"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsClientImportOpen(false)} disabled={clientImportUploading}>
+              Cancel
+            </Button>
+            <Button onClick={() => clientFileInputRef.current?.click()} className="gap-2" disabled={clientImportUploading || isDemoMode()}>
+              <Upload className="h-4 w-4" />
+              {clientImportUploading ? 'Uploading…' : 'Choose CSV file'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Clients Import Dialog */}
+      <Dialog open={isClientImportConfirmOpen} onOpenChange={setIsClientImportConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Import</DialogTitle>
+            <DialogDescription>
+              {pendingClients ? (
+                <>You are about to import {pendingClients.length} client(s). Continue?</>
+              ) : (
+                'No clients to import.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsClientImportConfirmOpen(false)} disabled={clientImportUploading}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmClientImport} disabled={clientImportUploading || !pendingClients}>
+              {clientImportUploading ? 'Importing…' : 'Import Clients'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialogs */}
       <ConfirmDeleteDialog

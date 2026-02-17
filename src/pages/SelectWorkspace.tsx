@@ -102,12 +102,12 @@ export default function SelectWorkspace() {
 
   if (authLoading || workspaceLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
-        <Card className="w-full max-w-md border border-[#cfcfcf] bg-white shadow-smooth-lg">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="flex items-center justify-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-[#2b8ac4]" />
-              <p className="text-[#617b5d]">Loading workspaces...</p>
+              <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+              <p className="text-slate-600">Loading workspaces...</p>
             </div>
           </CardContent>
         </Card>
@@ -124,15 +124,15 @@ export default function SelectWorkspace() {
   const expiredWorkspaces = ownedWorkspaces.filter(w => !w.hasActiveSubscription);
 
   return (
-    <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-2xl border border-[#cfcfcf] bg-white shadow-smooth-lg">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-4 w-16 h-16 bg-[#2b8ac4] rounded-full flex items-center justify-center">
+          <div className="mx-auto mb-4 w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center">
             <Building2 className="w-8 h-8 text-white" />
           </div>
-          <CardTitle className="text-3xl font-bold text-[#0B294b]">Select workspace</CardTitle>
-          <CardDescription className="text-lg mt-2 text-[#617b5d]">
-            Choose a workspace to manage its subscription.
+          <CardTitle className="text-3xl font-bold">Select Workspace</CardTitle>
+          <CardDescription className="text-lg mt-2">
+            Choose a workspace to manage its subscription
           </CardDescription>
         </CardHeader>
         

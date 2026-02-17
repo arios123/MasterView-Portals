@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Material } from '@/types/payments';
+import { isDemoMode } from '@/utils/demoMode';
 
 interface UseMaterialsForPaymentsProps {
   activeVersionId: string | null;
@@ -15,6 +16,10 @@ export function useMaterialsForPayments({
 
   useEffect(() => {
     const fetchRevisedMaterials = async () => {
+      if (isDemoMode()) {
+        setMaterials([]);
+        return;
+      }
       const allMaterials: Material[] = [];
 
       // Fetch revised materials from active draft
