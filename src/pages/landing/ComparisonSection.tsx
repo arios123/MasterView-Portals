@@ -19,7 +19,7 @@ const erpPainPoints = [
   },
   {
     pain: "Tools that feel too big or confusing",
-    solution: "Learn the system in under 30 minutes"
+    solution: "Learn the system in under an hour"
   },
   {
     pain: "Expensive per-seat licensing that grows fast",

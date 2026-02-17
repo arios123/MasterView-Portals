@@ -9,7 +9,7 @@ const valueProps = [
   },
   {
     icon: BookOpen,
-    title: "Learn the system in under 30 minutes",
+    title: "Learn the system in under an hour",
     description: "No consultants. No training sessions. Built-in tutorials guide you through every feature as you work.",
     highlight: "Your team gets confident fast"
   },

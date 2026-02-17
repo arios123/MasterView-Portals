@@ -8,7 +8,7 @@ export function Hero() {
 
   const benefits = [
     "One workflow from quote to contract to change order",
-    "Learn the system in under 30 minutes",
+    "Learn the system in under an hour",
     "No ERP complexity or consultants needed"
   ];
 
@@ -135,62 +135,23 @@ export function Hero() {
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="px-4 py-1 bg-white rounded-md text-xs text-[#8b8b8b] border border-[#cfcfcf]">
-                      app.masterviewportals.com
+                      masterviewportals.com
                     </div>
                   </div>
                 </div>
 
-                {/* Content preview */}
-                <div className="p-6 space-y-4">
-                  {/* Project header */}
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-xs text-[#8b8b8b] mb-1">Active Contract</div>
-                      <div className="text-lg font-semibold text-[#0B294b]">Commercial Buildout</div>
-                      <div className="text-sm text-[#8b8b8b]">Apex Properties LLC</div>
-                    </div>
-                    <div className="px-3 py-1.5 bg-[#a6dbeb]/30 text-[#0B294b] text-xs font-medium rounded-full">
-                      In Progress
-                    </div>
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="grid grid-cols-3 gap-4 py-4 border-y border-[#cfcfcf]">
-                    <div>
-                      <div className="text-2xl font-bold text-[#0B294b]">$48,250</div>
-                      <div className="text-xs text-[#8b8b8b]">Contract Value</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-[#0B294b]">3</div>
-                      <div className="text-xs text-[#8b8b8b]">Change Orders</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-[#0B294b]">68%</div>
-                      <div className="text-xs text-[#8b8b8b]">Collected</div>
-                    </div>
-                  </div>
-
-                  {/* Recent items */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-[#e7ebed] rounded-lg">
-                      <div className="w-8 h-8 rounded-lg bg-[#a6dbeb]/40 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-[#2b8ac4]" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-[#0B294b]">Change Order #3 Approved</div>
-                        <div className="text-xs text-[#8b8b8b]">Scope addition • +$2,400 • Contract updated</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-[#e7ebed] rounded-lg">
-                      <div className="w-8 h-8 rounded-lg bg-[#96ab94]/30 flex items-center justify-center">
-                        <span className="text-xs font-medium text-[#617b5d]">$</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-[#0B294b]">Payment Received</div>
-                        <div className="text-xs text-[#8b8b8b]">Milestone 2 • $12,000</div>
-                      </div>
-                    </div>
-                  </div>
+                {/* Content preview - Image */}
+                <div className="relative w-full aspect-[4/3] bg-white">
+                  <img
+                    src="/hero-preview.png"
+                    alt="MasterView Portals Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to a placeholder if image doesn't exist
+                      (e.currentTarget as HTMLImageElement).src =
+                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Crect width='100%25' height='100%25' fill='%23e7ebed'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238b8b8b' font-size='18' font-family='system-ui'%3EAdd your image at /public/hero-preview.png%3C/text%3E%3C/svg%3E";
+                    }}
+                  />
                 </div>
               </div>
 

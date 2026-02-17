@@ -2,7 +2,7 @@ import { Star } from "lucide-react";
 
 const metrics = [
   { value: "47", unit: "min", label: "Average setup time" },
-  { value: "30", unit: "min", label: "To learn core features" },
+  { value: "1", unit: "hr", label: "To learn core features" },
   { value: "0", unit: "", label: "Consultants required" }
 ];
 
@@ -29,7 +29,7 @@ const testimonials = [
 
 export function SocialProof() {
   return (
-    <section className="py-24 lg:py-32 bg-[#0B294b] relative overflow-hidden">
+    <section className="py-12 lg:py-16 bg-[#0B294b] relative overflow-hidden">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -40,7 +40,7 @@ export function SocialProof() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Metrics row */}
-        <div className="max-w-4xl mx-auto mb-20">
+        <div className="max-w-4xl mx-auto">
           <div className="grid sm:grid-cols-3 gap-8 lg:gap-12">
             {metrics.map((metric, index) => (
               <div key={index} className="text-center">
@@ -61,7 +61,7 @@ export function SocialProof() {
         </div>
 
         {/* Section header */}
-        <div className="text-center mb-12 lg:mb-16">
+        {/* <div className="text-center mb-12 lg:mb-16">
           <div className="flex items-center justify-center gap-1 mb-4">
             {[1, 2, 3, 4, 5].map((i) => (
               <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
@@ -70,10 +70,10 @@ export function SocialProof() {
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
             Trusted by design teams who value their time
           </h2>
-        </div>
+        </div> */}
 
         {/* Testimonials */}
-        <div className="max-w-6xl mx-auto">
+        {/* <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {testimonials.map((testimonial, index) => (
               <div 
@@ -96,10 +96,10 @@ export function SocialProof() {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Trust indicators */}
-        <div className="mt-16 lg:mt-20 pt-12 border-t border-[#2b8ac4]/30">
+        {/* <div className="mt-16 lg:mt-20 pt-12 border-t border-[#2b8ac4]/30">
           <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-12 text-[#a6dbeb]">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -122,7 +122,7 @@ export function SocialProof() {
               <span className="text-sm">99.9% Uptime</span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );
