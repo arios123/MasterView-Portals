@@ -1,0 +1,361 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter (body) and Playfair Display (landing titles) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 215 15% 92%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 0 0% 9%;
+
+    /* Black and white gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 9%), hsl(0 0% 20%));
+    --gradient-surface: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 15%), hsl(0 0% 30%));
+    
+    /* Shadows */
+    --shadow-elegant: 0 4px 20px -4px hsl(0 0% 0% / 0.15);
+    --shadow-card: 0 2px 10px -2px hsl(215 25% 15% / 0.08);
+    --shadow-glow: 0 0 30px hsl(0 0% 0% / 0.2);
+
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Landing page specific colors - New color palette */
+    --landing-bg: 200 12% 92%; /* #e7ebed - main background */
+    --landing-surface: 0 0% 100%; /* white surfaces */
+    --landing-text: 212 74% 17%; /* #0B294b - primary dark text */
+    --landing-text-muted: 0 0% 55%; /* #8b8b8b - muted text */
+    --landing-accent: 201 64% 47%; /* #2b8ac4 - primary blue */
+    --landing-accent-light: 195 60% 79%; /* #a6dbeb - light blue */
+    --landing-accent-secondary: 193 60% 56%; /* #46b7d7 - secondary blue */
+    --landing-sage: 116 12% 63%; /* #96ab94 - sage green */
+    --landing-sage-dark: 112 14% 42%; /* #617b5d - dark sage */
+    --landing-gray-light: 0 0% 81%; /* #cfcfcf - light gray */
+    --landing-gray-medium: 0 0% 55%; /* #8b8b8b - medium gray */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    background-color: hsl(200 12% 92%); /* #e7ebed */
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-foreground;
+    background-color: hsl(200 12% 92%) !important; /* #e7ebed - matches landing page */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  #root {
+    background-color: hsl(200 12% 92%); /* #e7ebed - matches landing page */
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Glassmorphism utilities for landing page */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .glass-dark {
+    background: rgba(11, 41, 75, 0.8); /* #0B294b with opacity */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-subtle {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* Grid background pattern */
+  .bg-grid {
+    background-size: 60px 60px;
+    background-image: 
+      linear-gradient(to right, hsl(212 74% 17% / 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(212 74% 17% / 0.03) 1px, transparent 1px);
+  }
+
+  /* Architectural line decorations */
+  .line-decoration {
+    position: relative;
+  }
+  
+  .line-decoration::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, hsl(201 64% 47%), transparent);
+  }
+
+  /* Section transitions */
+  .section-fade {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  
+  .section-fade.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Staggered animation delays */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-6 { animation-delay: 0.6s; }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+  .animation-delay-700 { animation-delay: 700ms; }
+  .animation-delay-1000 { animation-delay: 1000ms; }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(201 64% 47%), hsl(201 64% 37%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Smooth shadows for cards */
+  .shadow-smooth {
+    box-shadow: 
+      0 1px 2px hsl(212 74% 17% / 0.04),
+      0 4px 8px hsl(212 74% 17% / 0.04),
+      0 8px 16px hsl(212 74% 17% / 0.04);
+  }
+
+  .shadow-smooth-lg {
+    box-shadow: 
+      0 2px 4px hsl(212 74% 17% / 0.04),
+      0 8px 16px hsl(212 74% 17% / 0.06),
+      0 16px 32px hsl(212 74% 17% / 0.06);
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Animated text gradient for landing page */
+  .gradient-text-animated-landing {
+    background: linear-gradient(to right, #2b8ac4, #46b7d7, #2b8ac4);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-shift-landing 8s ease infinite;
+  }
+
+  /* Blinking cursor animation */
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  /* Gradient shift animation for landing page */
+  @keyframes gradient-shift-landing {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Blueprint grid background for features section */
+  .blueprint-grid-landing {
+    background-image: 
+      linear-gradient(rgba(43, 138, 196, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(43, 138, 196, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Gradient text for features section */
+  .text-gradient-features {
+    background: linear-gradient(135deg, #2b8ac4 0%, #46b7d7 50%, #2b8ac4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Architectural Cross Pattern for WorkflowTimeline */
+  .arch-pattern {
+    background-image: 
+      linear-gradient(45deg, transparent 45%, rgba(43, 138, 196, 0.1) 45%, rgba(43, 138, 196, 0.1) 55%, transparent 55%),
+      linear-gradient(-45deg, transparent 45%, rgba(43, 138, 196, 0.1) 45%, rgba(43, 138, 196, 0.1) 55%, transparent 55%);
+    background-size: 30px 30px;
+  }
+
+  /* Soft halo around text so background pattern doesn’t conflict with letters */
+  .updates-text-halo h1,
+  .updates-text-halo h1 span,
+  .updates-text-halo p,
+  .updates-text-halo span,
+  .updates-text-halo .text-xs {
+    text-shadow:
+      0 0 6px #e7ebed,
+      0 0 10px #e7ebed,
+      0 0 16px #e7ebed,
+      0 0 22px #e7ebed,
+      0 0 28px #e7ebed,
+      0 0 34px #e7ebed,
+      0 0 40px #e7ebed,
+      0 0 48px #e7ebed;
+  }
+
+  /* Isometric cubed pattern — 3D cube outlines, light stroke */
+  .isometric-pattern {
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 60'%3E%3Cg fill='none' stroke='rgba(43,138,196,0.09)' stroke-width='0.5'%3E%3Cpath d='M26 0 L39 7.5 L26 15 L13 7.5 Z'/%3E%3Cpath d='M13 7.5 L13 22.5 L26 30 L26 15 Z'/%3E%3Cpath d='M39 7.5 L39 22.5 L26 30 L26 15 Z'/%3E%3Cpath d='M13 22.5 L26 30 L39 22.5'/%3E%3Cpath d='M39 7.5 L52 15 L39 22.5 L26 15 Z'/%3E%3Cpath d='M26 15 L26 30 L39 22.5 L39 7.5 Z'/%3E%3Cpath d='M52 15 L52 30 L39 22.5 L39 7.5 Z'/%3E%3Cpath d='M26 30 L39 22.5 L52 30'/%3E%3Cpath d='M13 22.5 L26 30 L13 37.5 L0 30 Z'/%3E%3Cpath d='M0 30 L0 52.5 L13 37.5 L13 22.5 Z'/%3E%3Cpath d='M26 30 L26 52.5 L13 37.5 L13 22.5 Z'/%3E%3Cpath d='M0 52.5 L13 37.5 L26 52.5'/%3E%3Cpath d='M26 30 L39 37.5 L26 45 L13 37.5 Z'/%3E%3Cpath d='M13 37.5 L13 52.5 L26 60 L26 45 Z'/%3E%3Cpath d='M39 37.5 L39 52.5 L26 60 L26 45 Z'/%3E%3Cpath d='M13 52.5 L26 60 L39 52.5'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 104px 120px;
+  }
+
+  /* Gradient Text Warm for WorkflowTimeline */
+  .text-gradient-warm {
+    background: linear-gradient(135deg, #2b8ac4 0%, #46b7d7 50%, #2b8ac4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
+
+  /* Network mesh pattern - vertices connected with lines */
+  .network-mesh {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cdefs%3E%3Ccircle id='dot' r='3' fill='rgba(43,138,196,0.4)'/%3E%3C/defs%3E%3Cg stroke='rgba(43,138,196,0.25)' stroke-width='1' fill='none'%3E%3Cline x1='20' y1='30' x2='80' y2='20'/%3E%3Cline x1='80' y1='20' x2='140' y2='50'/%3E%3Cline x1='140' y1='50' x2='180' y2='30'/%3E%3Cline x1='20' y1='30' x2='50' y2='80'/%3E%3Cline x1='80' y1='20' x2='100' y2='70'/%3E%3Cline x1='140' y1='50' x2='120' y2='100'/%3E%3Cline x1='50' y1='80' x2='100' y2='70'/%3E%3Cline x1='100' y1='70' x2='120' y2='100'/%3E%3Cline x1='120' y1='100' x2='170' y2='90'/%3E%3Cline x1='50' y1='80' x2='30' y2='140'/%3E%3Cline x1='100' y1='70' x2='80' y2='130'/%3E%3Cline x1='120' y1='100' x2='150' y2='150'/%3E%3Cline x1='30' y1='140' x2='80' y2='130'/%3E%3Cline x1='80' y1='130' x2='150' y2='150'/%3E%3Cline x1='150' y1='150' x2='180' y2='120'/%3E%3Cline x1='30' y1='140' x2='60' y2='180'/%3E%3Cline x1='80' y1='130' x2='120' y2='180'/%3E%3Cline x1='150' y1='150' x2='170' y2='190'/%3E%3Cline x1='60' y1='180' x2='120' y2='180'/%3E%3Cline x1='120' y1='180' x2='170' y2='190'/%3E%3C/g%3E%3Cuse href='%23dot' x='20' y='30'/%3E%3Cuse href='%23dot' x='80' y='20'/%3E%3Cuse href='%23dot' x='140' y='50'/%3E%3Cuse href='%23dot' x='180' y='30'/%3E%3Cuse href='%23dot' x='50' y='80'/%3E%3Cuse href='%23dot' x='100' y='70'/%3E%3Cuse href='%23dot' x='120' y='100'/%3E%3Cuse href='%23dot' x='170' y='90'/%3E%3Cuse href='%23dot' x='30' y='140'/%3E%3Cuse href='%23dot' x='80' y='130'/%3E%3Cuse href='%23dot' x='150' y='150'/%3E%3Cuse href='%23dot' x='180' y='120'/%3E%3Cuse href='%23dot' x='60' y='180'/%3E%3Cuse href='%23dot' x='120' y='180'/%3E%3Cuse href='%23dot' x='170' y='190'/%3E%3C/svg%3E");
+    background-size: 300px 300px;
+  }
+}

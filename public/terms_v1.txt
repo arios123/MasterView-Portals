@@ -1,0 +1,166 @@
+Terms and Conditions
+
+Effective Date: December 19, 2025
+
+This End User License Agreement (“Agreement” or “EULA”) is a legal contract between AA Inventions (“Licensor,” “we,” or “us”) and any individual or entity accessing or using the AA Inventions software, systems, tools, or digital assets (“Software”). By clicking “I Agree”, accessing, or using the Software, the user (“Licensee,” “you,” or “your”) agrees to be bound by this Agreement.
+
+⸻
+
+1. Parties
+
+Licensor:
+AA Inventions
+Owned and operated by:
+ • AA Inventions
+
+Jurisdiction of Operation:
+The Software may be used and enforced throughout the United States.
+
+⸻
+
+2. Grant of License
+ 1. Licensor grants Licensee a limited, non-exclusive, non-transferable, revocable license to access and use the Software solely for internal business purposes as permitted by this Agreement.
+ 2. This license does not transfer ownership, and no intellectual property rights are assigned to Licensee.
+
+⸻
+
+3. Acceptable Use & Restrictions
+
+Licensee agrees not to:
+ • Copy, modify, reproduce, or attempt to reverse engineer any part of the Software.
+ • Sell, lease, rent, sublicense, or otherwise provide access to unauthorized third parties.
+ • Train competing software, AI systems, or automation tools using any part of the Software.
+ • Bypass security measures or attempt unauthorized integrations, scraping, or data extraction.
+ • Use the Software in a way that disrupts or harms Licensor, other users, or system integrity.
+
+Licensor may monitor usage for compliance and system optimization.
+
+⸻
+
+4. Licensor’s Right to Terminate at Any Time
+ 1. Licensor may suspend, restrict, or terminate Licensee’s access at any time, for any reason or for no reason, at Licensor’s sole and absolute discretion.
+This includes—but is not limited to—non-payment, misuse, breach of this Agreement, conflicts of interest, or business risk considerations.
+ 2. Upon termination:
+ • Access may be disabled immediately.
+ • Licensee must discontinue all use.
+ • Licensor is not obligated to provide advanced notice.
+ 3. Acceptance of this EULA means Licensee expressly acknowledges and agrees that service access may be revoked at any time, independent of any other business relationships or agreements.
+
+⸻
+
+5. Fees, Payments & Prorated Refunds
+ 1. If Licensee pays subscription, rental, or leasing fees, payments must be made according to the pricing schedule provided by Licensor.
+ 2. If Licensor terminates access:
+ • Licensee is entitled to a prorated refund for prepaid time not yet used.
+ 3. Licensor may adjust fees, add new service tiers, or modify pricing at any time with or without notice.
+
+⸻
+
+6. Independence From Third-Party Obligations
+ 1. Licensee acknowledges that Software access is entirely separate from any relationship, contract, or financial obligation involving any third party or other entity.
+ 2. Licensee agrees that suspension or termination of access is valid even if Licensee claims it is unrelated to other business matters.
+ 3. No external agreement overrides this EULA or restricts Licensor’s discretionary rights.
+
+⸻
+
+7. Ownership & Intellectual Property
+ 1. All source code, design, architecture, workflows, interfaces, processes, databases, and system logic are the exclusive property of AA Inventions.
+ 2. Licensee receives only a temporary right of use under this EULA.
+ 3. No part of the Software may be replicated, recreated, reverse engineered, or used to develop competing products.
+
+⸻
+
+8. Confidentiality
+
+Licensee agrees to maintain confidentiality of:
+ • Internal tools, workflows, processes, and UI elements,
+ • Pricing structures,
+ • Non-public system operations,
+ • Any proprietary or trade secret information.
+
+Confidentiality obligations survive termination.
+
+⸻
+
+9. System Changes, Updates & Modifications
+ 1. Licensor may modify, enhance, restrict, or discontinue any aspect of the Software at any time, without notice.
+ 2. Updates may impact workflows, performance, or system appearance, and Licensee agrees such changes are part of continued development.
+
+⸻
+
+10. Limitation of Liability
+
+To the fullest extent permitted by U.S. law:
+ 1. The Software is provided “as is” and “as available.”
+Licensor makes no warranties, express or implied.
+ 2. Licensor is not liable for:
+ • Lost revenue or profits,
+ • Business interruption,
+ • Loss of data,
+ • Errors caused by user actions,
+ • Integration issues with third-party software,
+ • Downtime or system inaccessibility.
+ 3. Licensor’s total liability under any claim shall not exceed the amount Licensee paid in the 60 days prior to the event giving rise to liability.
+
+⸻
+
+11. Indemnification
+
+Licensee agrees to indemnify and hold harmless AA Inventions, its owners, and its team from any claims, damages, liabilities, or expenses arising from:
+ • Improper use of the Software,
+ • Violation of this EULA,
+ • Unauthorized sharing or distribution,
+ • Misrepresentation,
+ • Third-party claims related to Licensee’s conduct.
+
+⸻
+
+12. Non-Compete / Non-Replication Clause (Optional Clause Enabled)
+
+Licensee agrees that they shall not, directly or indirectly:
+ • Develop or assist in developing competing software,
+ • Reproduce or replicate system features, logic, or workflows,
+ • Train AI or automation tools on the Software for competitive use,
+ • Use the Software to inform design of a similar tool or platform.
+
+This clause applies nationwide throughout the U.S.
+
+⸻
+
+13. Integration & API Restrictions (Optional Clause Enabled)
+ 1. No external integration, API usage, or data extraction is permitted without written authorization from Licensor.
+ 2. Unauthorized integrations may result in immediate termination.
+
+⸻
+
+14. Multi-User & Access Restrictions (Optional Clause Enabled)
+
+Unless explicitly stated in a paid tier:
+ • Accounts are for single-user access only.
+ • Sharing login credentials or attempting to bypass account limits is prohibited.
+ • Additional users require additional licenses.
+
+⸻
+
+15. Dispute Resolution & Arbitration (Optional Clause Enabled)
+ 1. In the event of a dispute arising out of this Agreement, the parties agree to resolve the issue through binding arbitration rather than litigation.
+ 2. Arbitration shall be conducted in the state where AA Inventions is headquartered.
+ 3. Each party is responsible for its own legal fees.
+
+⸻
+
+16. Governing Law
+
+This Agreement is governed by the laws of the United States and the state in which AA Inventions is headquartered, without regard to conflict-of-law principles.
+
+⸻
+
+17. Acceptance of Terms (Click-to-Agree Implementation)
+
+By clicking “I Agree”, accessing, or using the Software, Licensee acknowledges and agrees that:
+ • They have read the EULA in full;
+ • They accept all terms, conditions, and limitations;
+ • They understand access may be revoked at any time at Licensor’s discretion;
+ • They waive any right to contest suspension or termination of service.
+
+A click-to-continue mechanism shall legally function as acceptance of this Agreement.
