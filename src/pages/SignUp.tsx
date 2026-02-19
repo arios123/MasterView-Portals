@@ -293,7 +293,7 @@ import { useToast } from "@/hooks/use-toast";
 import { acceptTerms } from "@/queries/users";
 import { TermsConsentDialog } from "@/components/shared/TermsConsentDialog";
 import { CURRENT_TERMS_VERSION } from "@/utils/termsUtils";
-import { FileText, CheckCircle2 } from "lucide-react";
+import { FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { getPendingWorkspaceInvites, completeWorkspaceInvite, clearInviteMetadata, PendingInvite } from "@/queries/workspaceInvites";
 import { WorkspaceInviteSelectionDialog } from "@/components/shared/WorkspaceInviteSelectionDialog";
 
@@ -308,36 +308,84 @@ const SignUp = () => {
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [completingInvites, setCompletingInvites] = useState(false);
+  const [sessionConflict, setSessionConflict] = useState<{
+    currentEmail: string;
+  } | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
-  const accessToken = searchParams.get("access_token");
-  const refreshToken = searchParams.get("refresh_token");
-  const type = searchParams.get("type");
-  const token = searchParams.get("token");
-  const tokenHash = searchParams.get("token_hash");
-  const email = searchParams.get("email");
+  // Read params from both query string (?param=value) and hash fragments (#param=value)
+  // Supabase may redirect with either depending on the auth flow type (PKCE vs implicit)
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+  const accessToken = searchParams.get("access_token") || hashParams.get("access_token");
+  const refreshToken = searchParams.get("refresh_token") || hashParams.get("refresh_token");
+  const type = searchParams.get("type") || hashParams.get("type");
+  const token = searchParams.get("token") || hashParams.get("token");
+  const tokenHash = searchParams.get("token_hash") || hashParams.get("token_hash");
+  const email = searchParams.get("email") || hashParams.get("email");
 
   useEffect(() => {
     const init = async () => {
       try {
+        // ── CHECK FOR EXISTING SESSION (session-conflict handling) ──
+        // If the user is already logged in, we need to decide what to do
+        // before consuming the invite token.
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+        if (existingSession?.user) {
+          const currentEmail = (existingSession.user.email || "").toLowerCase();
+
+          // Determine if this URL actually carries invite params
+          const code = searchParams.get("code") || hashParams.get("code");
+          const hasInviteParams = !!(
+            code || tokenHash || (token && email) || (accessToken && refreshToken)
+          );
+
+          if (!hasInviteParams) {
+            // No invite params at all — the user just navigated here while logged in
+            setValidToken(false);
+            return;
+          }
+
+          // Try to figure out the invited email from URL params
+          const inviteEmail = (email || "").toLowerCase();
+
+          if (inviteEmail && inviteEmail === currentEmail) {
+            // ✅ Same email — sign out silently then continue the invite flow
+            // so the token can be consumed on a clean slate.
+            await supabase.auth.signOut();
+            // Fall through to the normal token-processing code below
+          } else {
+            // ❌ Different email OR we can't determine the invite email
+            // → show the "switch account" UI instead of silently clobbering the session
+            setSessionConflict({ currentEmail: existingSession.user.email || currentEmail });
+            return;
+          }
+        }
+
+        // ── NORMAL INVITE TOKEN PROCESSING (no conflicting session) ──
+
         // 1) Support PKCE/code exchange (some email templates use `code`)
-        const code = searchParams.get("code");
+        const code = searchParams.get("code") || hashParams.get("code");
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error || !data.session) throw error || new Error("No session from exchangeCodeForSession");
+          // Clean URL hash to keep things tidy
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
           setValidToken(true);
           return;
         }
 
-        // 2) Invite flow with token_hash
+        // 2) Invite flow with token_hash (from query params or hash)
         if (type === "invite" && tokenHash) {
           const { data, error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: "invite",
           });
           if (error || !data.session) throw error || new Error("No session from verifyOtp (invite)");
+          window.history.replaceState(null, '', window.location.pathname);
           setValidToken(true);
           return;
         }
@@ -349,17 +397,20 @@ const SignUp = () => {
             type: "invite",
           });
           if (error || !data.session) throw error || new Error("No session from verifyOtp (invite token)");
+          window.history.replaceState(null, '', window.location.pathname);
           setValidToken(true);
           return;
         }
 
-        // 4) Access/refresh tokens (recovery or older flows)
+        // 4) Access/refresh tokens (implicit flow or recovery — may come via hash fragments)
         if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
           if (error || !data.session) throw error || new Error("No session from setSession");
+          // Clean URL hash to keep things tidy
+          window.history.replaceState(null, '', window.location.pathname);
           setValidToken(true);
           return;
         }
@@ -374,6 +425,16 @@ const SignUp = () => {
 
     init();
   }, [accessToken, refreshToken, type, tokenHash, token, email, searchParams]);
+
+  // Sign out the current user and reload the page so the invite can be
+  // consumed on a clean slate (no session conflict).
+  const handleSwitchAndAccept = async () => {
+    // Capture the FULL URL including hash fragments before signing out
+    const fullInviteUrl = window.location.href;
+    await supabase.auth.signOut();
+    // Force a hard page reload (React Router navigate would lose the hash)
+    window.location.href = fullInviteUrl;
+  };
 
   const handleTermsAccept = async () => {
     try {
@@ -700,6 +761,49 @@ const SignUp = () => {
     }
   };
 
+  // ── SESSION CONFLICT UI ──
+  // The user is already logged in as a different email (or we can't tell).
+  // Let them decide whether to switch accounts or go back to the dashboard.
+  if (sessionConflict) {
+    return (
+      <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+
+        <Card className="w-full max-w-md rounded-2xl border border-[#cfcfcf] bg-white shadow-smooth-lg relative z-10">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-[#0B294b]">
+              Already Signed In
+            </CardTitle>
+            <CardDescription className="text-[#617b5d] mt-2 text-sm">
+              You're currently signed in as{" "}
+              <strong className="text-[#0B294b]">{sessionConflict.currentEmail}</strong>.
+              <br />
+              To accept this invite, you'll need to sign out first.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={handleSwitchAndAccept}
+              className="w-full rounded-xl bg-[#2b8ac4] text-white hover:bg-[#46b7d7] transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              Sign Out &amp; Accept Invite
+            </Button>
+            <Button
+              onClick={() => navigate("/projects")}
+              variant="outline"
+              className="w-full rounded-xl border-[#cfcfcf] text-[#0B294b] hover:bg-[#e7ebed] transition-all duration-200"
+            >
+              Go to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (validToken === null) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white flex items-center justify-center p-4 relative overflow-hidden">
@@ -714,27 +818,22 @@ const SignUp = () => {
   console.log("testing");
   if (validToken === false) {
     return (
-      <div 
-        className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white flex items-center justify-center p-4 relative overflow-hidden"
-        style={{ backgroundColor: 'rgb(15 23 42)' }}
-      >
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute w-64 h-64 bg-emerald-400/30 blur-3xl rounded-full -top-10 -left-10" />
-          <div className="absolute w-80 h-80 bg-cyan-400/25 blur-3xl rounded-full bottom-0 right-10" />
-        </div>
+      <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
         
-        <Card className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-800/95 backdrop-blur-sm shadow-xl relative z-10">
-          <CardHeader>
-            <CardTitle className="text-destructive text-white">Invalid Link</CardTitle>
-            <CardDescription className="text-slate-300">
-              This link is invalid or has expired. Please contact your administrator for a new invite.
-            </CardDescription>
+        <Card className="w-full max-w-md rounded-2xl border border-[#cfcfcf] bg-white shadow-smooth-lg relative z-10">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl font-bold text-[#0B294b]">
+              Invalid Invite Link
+            </CardTitle>
+            <p className="text-[#617b5d] mt-2 text-sm">
+              This invite link is invalid or has expired. Please contact your administrator for a new invite.
+            </p>
           </CardHeader>
           <CardContent>
             <Button 
               onClick={() => navigate("/login")} 
-              className="w-full rounded-xl bg-emerald-500 text-white hover:bg-emerald-400 transition-all duration-200"
+              className="w-full rounded-xl bg-[#2b8ac4] text-white hover:bg-[#46b7d7] transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Go to Login
             </Button>
