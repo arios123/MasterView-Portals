@@ -1,287 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import { useNavigate, useSearchParams } from 'react-router-dom';
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import { useToast } from "@/hooks/use-toast";
-// import { supabase } from "@/integrations/supabase/client";
-// import { User, Session } from '@supabase/supabase-js';
-
-// export default function SignUp() {
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [confirmPassword, setConfirmPassword] = useState('');
-//   const [name, setName] = useState('');
-//   const [loading, setLoading] = useState(false);
-//   const [user, setUser] = useState<User | null>(null);
-//   const [session, setSession] = useState<Session | null>(null);
-//   const [isInviteFlow, setIsInviteFlow] = useState(false);
-//   const [searchParams] = useSearchParams();
-//   const navigate = useNavigate();
-//   const { toast } = useToast();
-
-//   // Handle invite token from URL
-//   useEffect(() => {
-//     const handleInvite = async () => {
-//       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-//       const accessToken = hashParams.get('access_token');
-//       const refreshToken = hashParams.get('refresh_token');
-//       const type = hashParams.get('type');
-
-//       if (type === 'invite' || (accessToken && refreshToken)) {
-//         setIsInviteFlow(true);
-//       }
-
-//       if (accessToken && refreshToken) {
-//         // Establish session from invite tokens
-//         const { error } = await supabase.auth.setSession({
-//           access_token: accessToken,
-//           refresh_token: refreshToken,
-//         });
-
-//         if (!error) {
-//           const { data: { user } } = await supabase.auth.getUser();
-//           if (user?.email) {
-//             setEmail(user.email);
-//           }
-//           // Clean URL hash to keep things tidy
-//           window.history.replaceState(null, '', window.location.pathname + window.location.search);
-//         }
-//       }
-//     };
-
-//     handleInvite();
-//   }, []);
-
-//   useEffect(() => {
-//     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-//       (event, session) => {
-//         setSession(session);
-//         setUser(session?.user ?? null);
-//       }
-//     );
-
-//     // Check for existing session
-//     supabase.auth.getSession().then(({ data: { session } }) => {
-//       setSession(session);
-//       setUser(session?.user ?? null);
-
-//       // Only redirect if already authenticated AND definitely not in invite flow
-//       // Check if session exists but also check if URL has invite tokens
-//       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-//       const hasInviteTokens = hashParams.get('type') === 'invite' ||
-//                               (hashParams.get('access_token') && hashParams.get('refresh_token'));
-
-//       if (session?.user && !hasInviteTokens && !isInviteFlow) {
-//         navigate('/');
-//       }
-//     });
-
-//     return () => subscription.unsubscribe();
-//   }, [navigate, isInviteFlow]);
-
-//   const handleSignUp = async (e: React.FormEvent) => {
-//     e.preventDefault();
-
-//     if (!email || !password || !confirmPassword || !name) {
-//       toast({
-//         title: "Missing Information",
-//         description: "Please fill in all fields",
-//         variant: "destructive",
-//       });
-//       return;
-//     }
-
-//     if (password !== confirmPassword) {
-//       toast({
-//         title: "Password Mismatch",
-//         description: "Passwords do not match",
-//         variant: "destructive",
-//       });
-//       return;
-//     }
-
-//     if (password.length < 6) {
-//       toast({
-//         title: "Password Too Short",
-//         description: "Password must be at least 6 characters long",
-//         variant: "destructive",
-//       });
-//       return;
-//     }
-
-//     setLoading(true);
-
-//     try {
-//       // Check if this is an invite completion
-//       if (isInviteFlow && user) {
-//         // Complete invite by setting password and updating user metadata
-//         const { data: { user: updatedUser }, error: updateError } = await supabase.auth.updateUser({
-//           password: password,
-//           data: {
-//             name: name,
-//             display_name: name,
-//           }
-//         });
-
-//         if (updateError) {
-//           throw updateError;
-//         }
-
-//         // Update the public.users table with the name
-//         if (updatedUser) {
-//           const { error: profileError } = await supabase
-//             .from('users')
-//             .update({ name: name })
-//             .eq('user_id', updatedUser.id);
-
-//           if (profileError) {
-//             console.error('Error updating profile:', profileError);
-//             throw profileError;
-//           }
-//         }
-
-//           toast({
-//             title: "Account setup complete!",
-//             description: "Welcome to the team!",
-//           });
-
-//           // Redirect to home after successful invite completion
-//           setTimeout(() => navigate('/'), 1000);
-//       } else {
-//         // Regular signup flow
-//         const redirectUrl = `${window.location.origin}/`;
-
-//         const { error } = await supabase.auth.signUp({
-//           email,
-//           password,
-//           options: {
-//             emailRedirectTo: redirectUrl,
-//             data: {
-//               name: name,
-//             }
-//           }
-//         });
-
-//         if (error) {
-//           throw error;
-//         }
-
-//         toast({
-//           title: "Account Created",
-//           description: "Please check your email to confirm your account",
-//         });
-
-//         // Clear form
-//         setEmail('');
-//         setPassword('');
-//         setConfirmPassword('');
-//         setName('');
-//       }
-//     } catch (error: any) {
-//       let errorMessage = "An error occurred during sign up";
-
-//       if (error.message.includes('User already registered')) {
-//         errorMessage = "An account with this email already exists";
-//       } else if (error.message.includes('Password should be')) {
-//         errorMessage = "Password does not meet requirements";
-//       } else if (error.message) {
-//         errorMessage = error.message;
-//       }
-
-//       toast({
-//         title: "Sign Up Failed",
-//         description: errorMessage,
-//         variant: "destructive",
-//       });
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-//       <Card className="w-full max-w-md rounded-2xl border bg-white shadow-lg">
-//         <CardHeader className="text-center pb-6">
-//           <CardTitle className="text-2xl font-bold text-slate-900">
-//             {isInviteFlow ? 'Complete Your Invitation' : 'Create Account'}
-//           </CardTitle>
-//           <p className="text-slate-600 mt-2">
-//             {isInviteFlow
-//               ? 'Set your name and password to complete your account setup'
-//               : 'Complete your account setup with the invitation'}
-//           </p>
-//         </CardHeader>
-//         <CardContent>
-//           <form onSubmit={handleSignUp} className="space-y-4">
-//             <div className="space-y-2">
-//               <Label htmlFor="name">Full Name</Label>
-//               <Input
-//                 id="name"
-//                 type="text"
-//                 placeholder="Enter your full name"
-//                 value={name}
-//                 onChange={(e) => setName(e.target.value)}
-//                 className="rounded-xl"
-//                 disabled={loading}
-//                 required
-//               />
-//             </div>
-//             <div className="space-y-2">
-//               <Label htmlFor="email">Email</Label>
-//               <Input
-//                 id="email"
-//                 type="email"
-//                 placeholder="Enter your email"
-//                 value={email}
-//                 onChange={(e) => setEmail(e.target.value)}
-//                 className="rounded-xl"
-//                 disabled={loading || isInviteFlow}
-//                 required
-//               />
-//             </div>
-//             <div className="space-y-2">
-//               <Label htmlFor="password">Password</Label>
-//               <Input
-//                 id="password"
-//                 type="password"
-//                 placeholder="Create a password (min 6 characters)"
-//                 value={password}
-//                 onChange={(e) => setPassword(e.target.value)}
-//                 className="rounded-xl"
-//                 disabled={loading}
-//                 required
-//                 minLength={6}
-//               />
-//             </div>
-//             <div className="space-y-2">
-//               <Label htmlFor="confirmPassword">Confirm Password</Label>
-//               <Input
-//                 id="confirmPassword"
-//                 type="password"
-//                 placeholder="Confirm your password"
-//                 value={confirmPassword}
-//                 onChange={(e) => setConfirmPassword(e.target.value)}
-//                 className="rounded-xl"
-//                 disabled={loading}
-//                 required
-//                 minLength={6}
-//               />
-//             </div>
-//             <Button
-//               type="submit"
-//               className="w-full rounded-xl bg-black text-white hover:bg-gray-900"
-//               disabled={loading}
-//             >
-//               {loading ? "Setting up account..." : isInviteFlow ? "Complete Setup" : "Create Account"}
-//             </Button>
-//           </form>
-//         </CardContent>
-//       </Card>
-//     </div>
-//   );
-// }
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -296,6 +12,7 @@ import { CURRENT_TERMS_VERSION } from "@/utils/termsUtils";
 import { FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { getPendingWorkspaceInvites, completeWorkspaceInvite, clearInviteMetadata, PendingInvite } from "@/queries/workspaceInvites";
 import { WorkspaceInviteSelectionDialog } from "@/components/shared/WorkspaceInviteSelectionDialog";
+import { useLocation } from "react-router-dom";
 
 const SignUp = () => {
   const [password, setPassword] = useState("");
@@ -315,6 +32,9 @@ const SignUp = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
+// inside component:
+  const location = useLocation();
+
   // Read params from both query string (?param=value) and hash fragments (#param=value)
   // Supabase may redirect with either depending on the auth flow type (PKCE vs implicit)
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -326,44 +46,161 @@ const SignUp = () => {
   const tokenHash = searchParams.get("token_hash") || hashParams.get("token_hash");
   const email = searchParams.get("email") || hashParams.get("email");
 
+  // useEffect(() => {
+  //   const init = async () => {
+  //     try {
+  //       // Determine if this URL carries invite params at all
+  //       const code = searchParams.get("code") || hashParams.get("code");
+  //       const hasInviteParams = !!(
+  //         code || tokenHash || (token && email) || (accessToken && refreshToken)
+  //       );
+
+  //       // ── NO INVITE PARAMS ──
+  //       // If the URL has no tokens the user just navigated here manually.
+  //       if (!hasInviteParams) {
+  //         const { data: { session: existingSession } } = await supabase.auth.getSession();
+  //         if (existingSession?.user) {
+  //           // Already logged in — send them to the dashboard
+  //           navigate("/projects");
+  //           return;
+  //         }
+  //         // Not logged in and no tokens → nothing to work with
+  //         setValidToken(false);
+  //         return;
+  //       }
+
+  //       // ── INVITE PARAMS PRESENT — try to consume tokens ──
+  //       // NOTE: Supabase's JS client may have already auto-consumed hash-fragment
+  //       // tokens (implicit flow). In that case the manual calls below will fail,
+  //       // but we fall through to the session check at the bottom.
+
+  //       // 1) PKCE / code exchange
+  //       if (code) {
+  //         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  //         if (!error && data.session) {
+  //           window.history.replaceState(null, '', window.location.pathname);
+  //           setValidToken(true);
+  //           return;
+  //         }
+  //       }
+
+  //       // 2) Invite with token_hash
+  //       if (type === "invite" && tokenHash) {
+  //         const { data, error } = await supabase.auth.verifyOtp({
+  //           token_hash: tokenHash,
+  //           type: "invite",
+  //         });
+  //         if (!error && data.session) {
+  //           window.history.replaceState(null, '', window.location.pathname);
+  //           setValidToken(true);
+  //           return;
+  //         }
+  //       }
+
+  //       // 3) Invite with token + email
+  //       if (type === "invite" && token && email) {
+  //         const { data, error } = await supabase.auth.verifyOtp({
+  //           email,
+  //           token,
+  //           type: "invite",
+  //         });
+  //         if (!error && data.session) {
+  //           window.history.replaceState(null, '', window.location.pathname);
+  //           setValidToken(true);
+  //           return;
+  //         }
+  //       }
+
+  //       // 4) Access / refresh tokens (implicit flow or recovery)
+  //       if (accessToken && refreshToken) {
+  //         const { data, error } = await supabase.auth.setSession({
+  //           access_token: accessToken,
+  //           refresh_token: refreshToken,
+  //         });
+  //         if (!error && data.session) {
+  //           window.history.replaceState(null, '', window.location.pathname);
+  //           setValidToken(true);
+  //           return;
+  //         }
+  //       }
+
+  //       // 5) Fallback — Supabase may have already auto-consumed the hash tokens
+  //       //    and established a session before our code ran. Check for that session.
+  //       const { data: { session: autoSession } } = await supabase.auth.getSession();
+  //       if (autoSession?.user) {
+  //         window.history.replaceState(null, '', window.location.pathname);
+  //         setValidToken(true);
+  //         return;
+  //       }
+
+  //       // Nothing worked — tokens are invalid / expired
+  //       setValidToken(false);
+  //     } catch (err) {
+  //       console.error("Invite link verification failed:", err);
+  //       // Even if a token call threw, Supabase may still have auto-created a session
+  //       try {
+  //         const { data: { session } } = await supabase.auth.getSession();
+  //         if (session?.user) {
+  //           window.history.replaceState(null, '', window.location.pathname);
+  //           setValidToken(true);
+  //           return;
+  //         }
+  //       } catch { /* ignore */ }
+  //       setValidToken(false);
+  //     }
+  //   };
+
+  //   init();
+  // }, [accessToken, refreshToken, type, tokenHash, token, email, searchParams]);
+  const redirectToSetPassword = () => {
+    // Preserve tokens if they are in hash/query so /set-password can still read them if needed
+    // Use replace so back button doesn’t go to the raw token URL
+    navigate(`/set-password${window.location.search}${window.location.hash}`, { replace: true });
+  };
+  
   useEffect(() => {
     const init = async () => {
       try {
-        // Determine if this URL carries invite params at all
         const code = searchParams.get("code") || hashParams.get("code");
         const hasInviteParams = !!(
           code || tokenHash || (token && email) || (accessToken && refreshToken)
         );
-
+  
+        // If we already ARE on /set-password and we have no invite params,
+        // don’t redirect away — let the page show invalid/expired state.
+        const isSetPasswordRoute = location.pathname === "/set-password";
+  
         // ── NO INVITE PARAMS ──
-        // If the URL has no tokens the user just navigated here manually.
         if (!hasInviteParams) {
           const { data: { session: existingSession } } = await supabase.auth.getSession();
+  
           if (existingSession?.user) {
-            // Already logged in — send them to the dashboard
-            navigate("/projects");
-            return;
+            // If user is logged in and they manually visited /signup, send to dashboard.
+            // BUT do not hijack /set-password (so they can finish invite setup).
+            if (!isSetPasswordRoute) {
+              navigate("/projects", { replace: true });
+              return;
+            }
           }
-          // Not logged in and no tokens → nothing to work with
+  
           setValidToken(false);
           return;
         }
-
+  
         // ── INVITE PARAMS PRESENT — try to consume tokens ──
-        // NOTE: Supabase's JS client may have already auto-consumed hash-fragment
-        // tokens (implicit flow). In that case the manual calls below will fail,
-        // but we fall through to the session check at the bottom.
-
+        // IMPORTANT: as soon as we confirm a session, immediately push to /set-password
+        // to prevent other guards from redirecting elsewhere.
+  
         // 1) PKCE / code exchange
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (!error && data.session) {
-            window.history.replaceState(null, '', window.location.pathname);
             setValidToken(true);
+            redirectToSetPassword();
             return;
           }
         }
-
+  
         // 2) Invite with token_hash
         if (type === "invite" && tokenHash) {
           const { data, error } = await supabase.auth.verifyOtp({
@@ -371,12 +208,12 @@ const SignUp = () => {
             type: "invite",
           });
           if (!error && data.session) {
-            window.history.replaceState(null, '', window.location.pathname);
             setValidToken(true);
+            redirectToSetPassword();
             return;
           }
         }
-
+  
         // 3) Invite with token + email
         if (type === "invite" && token && email) {
           const { data, error } = await supabase.auth.verifyOtp({
@@ -385,54 +222,66 @@ const SignUp = () => {
             type: "invite",
           });
           if (!error && data.session) {
-            window.history.replaceState(null, '', window.location.pathname);
             setValidToken(true);
+            redirectToSetPassword();
             return;
           }
         }
-
-        // 4) Access / refresh tokens (implicit flow or recovery)
+  
+        // 4) Access / refresh tokens
         if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
           if (!error && data.session) {
-            window.history.replaceState(null, '', window.location.pathname);
             setValidToken(true);
+            redirectToSetPassword();
             return;
           }
         }
-
-        // 5) Fallback — Supabase may have already auto-consumed the hash tokens
-        //    and established a session before our code ran. Check for that session.
+  
+        // 5) Fallback — auto-consumed by Supabase before we ran
         const { data: { session: autoSession } } = await supabase.auth.getSession();
         if (autoSession?.user) {
-          window.history.replaceState(null, '', window.location.pathname);
           setValidToken(true);
+          redirectToSetPassword();
           return;
         }
-
-        // Nothing worked — tokens are invalid / expired
+  
         setValidToken(false);
       } catch (err) {
         console.error("Invite link verification failed:", err);
-        // Even if a token call threw, Supabase may still have auto-created a session
+  
+        // Still try fallback session check
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-            window.history.replaceState(null, '', window.location.pathname);
             setValidToken(true);
+            redirectToSetPassword();
             return;
           }
-        } catch { /* ignore */ }
+        } catch {
+          // ignore
+        }
+  
         setValidToken(false);
       }
     };
-
+  
     init();
-  }, [accessToken, refreshToken, type, tokenHash, token, email, searchParams]);
-
+    // include location.pathname because we use it
+  }, [
+    accessToken,
+    refreshToken,
+    type,
+    tokenHash,
+    token,
+    email,
+    searchParams,
+    location.pathname,
+  ]);
+  
   // Sign out the current user and reload the page so the invite can be
   // consumed on a clean slate (no session conflict).
   const handleSwitchAndAccept = async () => {
