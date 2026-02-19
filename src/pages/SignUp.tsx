@@ -329,96 +329,103 @@ const SignUp = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        // ── CHECK FOR EXISTING SESSION (session-conflict handling) ──
-        // If the user is already logged in, we need to decide what to do
-        // before consuming the invite token.
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-
-        if (existingSession?.user) {
-          const currentEmail = (existingSession.user.email || "").toLowerCase();
-
-          // Determine if this URL actually carries invite params
-          const code = searchParams.get("code") || hashParams.get("code");
-          const hasInviteParams = !!(
-            code || tokenHash || (token && email) || (accessToken && refreshToken)
-          );
-
-          if (!hasInviteParams) {
-            // No invite params at all — the user just navigated here while logged in
-            setValidToken(false);
-            return;
-          }
-
-          // Try to figure out the invited email from URL params
-          const inviteEmail = (email || "").toLowerCase();
-
-          if (inviteEmail && inviteEmail === currentEmail) {
-            // ✅ Same email — sign out silently then continue the invite flow
-            // so the token can be consumed on a clean slate.
-            await supabase.auth.signOut();
-            // Fall through to the normal token-processing code below
-          } else {
-            // ❌ Different email OR we can't determine the invite email
-            // → show the "switch account" UI instead of silently clobbering the session
-            setSessionConflict({ currentEmail: existingSession.user.email || currentEmail });
-            return;
-          }
-        }
-
-        // ── NORMAL INVITE TOKEN PROCESSING (no conflicting session) ──
-
-        // 1) Support PKCE/code exchange (some email templates use `code`)
+        // Determine if this URL carries invite params at all
         const code = searchParams.get("code") || hashParams.get("code");
-        if (code) {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error || !data.session) throw error || new Error("No session from exchangeCodeForSession");
-          // Clean URL hash to keep things tidy
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          setValidToken(true);
+        const hasInviteParams = !!(
+          code || tokenHash || (token && email) || (accessToken && refreshToken)
+        );
+
+        // ── NO INVITE PARAMS ──
+        // If the URL has no tokens the user just navigated here manually.
+        if (!hasInviteParams) {
+          const { data: { session: existingSession } } = await supabase.auth.getSession();
+          if (existingSession?.user) {
+            // Already logged in — send them to the dashboard
+            navigate("/projects");
+            return;
+          }
+          // Not logged in and no tokens → nothing to work with
+          setValidToken(false);
           return;
         }
 
-        // 2) Invite flow with token_hash (from query params or hash)
+        // ── INVITE PARAMS PRESENT — try to consume tokens ──
+        // NOTE: Supabase's JS client may have already auto-consumed hash-fragment
+        // tokens (implicit flow). In that case the manual calls below will fail,
+        // but we fall through to the session check at the bottom.
+
+        // 1) PKCE / code exchange
+        if (code) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error && data.session) {
+            window.history.replaceState(null, '', window.location.pathname);
+            setValidToken(true);
+            return;
+          }
+        }
+
+        // 2) Invite with token_hash
         if (type === "invite" && tokenHash) {
           const { data, error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: "invite",
           });
-          if (error || !data.session) throw error || new Error("No session from verifyOtp (invite)");
-          window.history.replaceState(null, '', window.location.pathname);
-          setValidToken(true);
-          return;
+          if (!error && data.session) {
+            window.history.replaceState(null, '', window.location.pathname);
+            setValidToken(true);
+            return;
+          }
         }
-        // 3) Invite flow with token + email (some templates)
+
+        // 3) Invite with token + email
         if (type === "invite" && token && email) {
           const { data, error } = await supabase.auth.verifyOtp({
             email,
             token,
             type: "invite",
           });
-          if (error || !data.session) throw error || new Error("No session from verifyOtp (invite token)");
-          window.history.replaceState(null, '', window.location.pathname);
-          setValidToken(true);
-          return;
+          if (!error && data.session) {
+            window.history.replaceState(null, '', window.location.pathname);
+            setValidToken(true);
+            return;
+          }
         }
 
-        // 4) Access/refresh tokens (implicit flow or recovery — may come via hash fragments)
+        // 4) Access / refresh tokens (implicit flow or recovery)
         if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
-          if (error || !data.session) throw error || new Error("No session from setSession");
-          // Clean URL hash to keep things tidy
+          if (!error && data.session) {
+            window.history.replaceState(null, '', window.location.pathname);
+            setValidToken(true);
+            return;
+          }
+        }
+
+        // 5) Fallback — Supabase may have already auto-consumed the hash tokens
+        //    and established a session before our code ran. Check for that session.
+        const { data: { session: autoSession } } = await supabase.auth.getSession();
+        if (autoSession?.user) {
           window.history.replaceState(null, '', window.location.pathname);
           setValidToken(true);
           return;
         }
 
-        // If we reach here, not enough data to create a session
+        // Nothing worked — tokens are invalid / expired
         setValidToken(false);
       } catch (err) {
         console.error("Invite link verification failed:", err);
+        // Even if a token call threw, Supabase may still have auto-created a session
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            window.history.replaceState(null, '', window.location.pathname);
+            setValidToken(true);
+            return;
+          }
+        } catch { /* ignore */ }
         setValidToken(false);
       }
     };
@@ -815,7 +822,6 @@ const SignUp = () => {
       </div>
     );
   }
-  console.log("testing");
   if (validToken === false) {
     return (
       <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
