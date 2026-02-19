@@ -141,9 +141,9 @@ if (!user && !isPasswordRecovery) {
 
   // Check if user has admin tab access
   if (!can(ADMIN_TAB_PERMISSION)) {
-    // Don't redirect if in password recovery - send them to reset-password
+    // Don't redirect if in password recovery - send them to set-password
     if (isPasswordRecovery) {
-      return <Navigate to="/reset-password" replace />;
+      return <Navigate to="/set-password" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }
@@ -154,7 +154,7 @@ if (!user && !isPasswordRecovery) {
     if (!isSectionVisible(requestedSection)) {
       // Don't redirect if in password recovery
       if (isPasswordRecovery) {
-        return <Navigate to="/reset-password" replace />;
+        return <Navigate to="/set-password" replace />;
       }
       // User doesn't have permission for this specific section
       // Redirect will be handled by useEffect, but we can show a loading state

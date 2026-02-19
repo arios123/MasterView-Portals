@@ -10,24 +10,22 @@ export default function LandingWrapper() {
   useEffect(() => {
     // Check if recovery is detected in URL (before context state might be set)
     const checkRecoveryInUrl = () => {
+      // Only detect explicit type=recovery — code/token_hash alone could be invites
       if (window.location.hash) {
         const params = new URLSearchParams(window.location.hash.substring(1));
-        const type = params.get("type");
-        const code = params.get("code");
-        const tokenHash = params.get("token_hash");
-        return type === "recovery" || !!code || !!tokenHash;
+        if (params.get("type") === "recovery") return true;
       }
       const searchParams = new URLSearchParams(window.location.search);
-      return searchParams.get("type") === "recovery" || !!searchParams.get("code") || !!searchParams.get("token_hash");
+      return searchParams.get("type") === "recovery";
     };
 
     const hasRecoveryInUrl = checkRecoveryInUrl();
 
-    // If we detect recovery in URL OR in context, redirect to reset-password immediately
+    // If we detect recovery in URL OR in context, redirect to set-password immediately
     // This should happen even before user is fully loaded (hash detection is immediate)
     if (hasRecoveryInUrl || isPasswordRecovery) {
       // Use window.location.href to preserve hash fragments (React Router navigate() loses them)
-      window.location.href = '/reset-password' + window.location.hash + window.location.search;
+      window.location.href = '/set-password' + window.location.hash + window.location.search;
       return;
     }
 

@@ -27,7 +27,7 @@ import Auth from "./pages/Auth";
 import Register from "./pages/Register";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
+import SetPassword from "./pages/SetPassword";
 import NotFound from "./pages/NotFound";
 import ChoosePlan from "./pages/ChoosePlan";
 import SelectWorkspace from "./pages/SelectWorkspace";
@@ -76,7 +76,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/set-password" element={<SetPassword />} />
             <Route path="/choose-plan" element={
               <ProtectedRoute>
                 <ChoosePlan />

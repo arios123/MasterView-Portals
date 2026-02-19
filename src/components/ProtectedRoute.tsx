@@ -48,10 +48,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  // 🔐 Allow authenticated users to stay on reset-password during recovery
+  // 🔐 Allow authenticated users to stay on set-password during recovery
   if (
     isPasswordRecovery &&
-    location.pathname === '/reset-password'
+    location.pathname === '/set-password'
   ) {
     return <>{children}</>;
   }

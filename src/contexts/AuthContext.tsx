@@ -33,24 +33,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const recoveryDetectedOnceRef = useRef(false);
 
   const detectRecovery = () => {
-    // First check URL hash (Supabase v2 recommended approach)
+    // Check hash for explicit type=recovery (Supabase v2 recommended approach)
     if (window.location.hash) {
       const params = new URLSearchParams(window.location.hash.substring(1));
-      const type = params.get("type");
-      const code = params.get("code");
-      const tokenHash = params.get("token_hash");
-      const isRecovery = type === "recovery" || !!code || !!tokenHash;
-      if (isRecovery) return true;
+      if (params.get("type") === "recovery") return true;
     }
-    
-    // Fallback: check search params
+
+    // Check search params for explicit type=recovery
     const searchParams = new URLSearchParams(window.location.search);
-    const searchType = searchParams.get("type");
-    const searchCode = searchParams.get("code");
-    const searchTokenHash = searchParams.get("token_hash");
-    const hasRecoveryInSearch = searchType === "recovery" || !!searchCode || !!searchTokenHash;
-    
-    return hasRecoveryInSearch;
+    if (searchParams.get("type") === "recovery") return true;
+
+    // On /set-password page, also accept code/token_hash as recovery indicators.
+    // These params are ambiguous elsewhere (e.g. /signup uses them for invites),
+    // so we only trust them when we're already on the password-reset page.
+    if (window.location.pathname === '/set-password') {
+      const hasCode = !!searchParams.get("code") ||
+        (window.location.hash ? !!new URLSearchParams(window.location.hash.substring(1)).get("code") : false);
+      const hasTokenHash = !!searchParams.get("token_hash") ||
+        (window.location.hash ? !!new URLSearchParams(window.location.hash.substring(1)).get("token_hash") : false);
+      if (hasCode || hasTokenHash) return true;
+    }
+
+    return false;
   };
 
   useEffect(() => {
@@ -61,10 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       recoveryDetectedOnceRef.current = true;
       setIsPasswordRecovery(true);
       
-      // If we're not already on reset-password page, redirect there immediately
-      if (window.location.pathname !== '/reset-password') {
+      // If we're not already on the set-password page, redirect there immediately
+      if (window.location.pathname !== '/set-password') {
         // Use window.location.href for immediate redirect (happens before React router)
-        window.location.href = '/reset-password' + window.location.hash + window.location.search;
+        window.location.href = '/set-password' + window.location.hash + window.location.search;
       }
     }
 
@@ -81,20 +85,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         // If we've detected recovery once, or if we detect it now, keep it true
-        // Also check if we're on reset-password page with a session
+        // Also check if we're on set-password page with a session
         let shouldBeInRecovery = recoveryDetectedOnceRef.current || isRecoveryEvent || recoveryFromUrl;
         
-        // If we're on reset-password page with a session and we've detected recovery, keep it true
-        if (window.location.pathname === '/reset-password' && session && recoveryDetectedOnceRef.current) {
+        // If we're on set-password page with a session and we've detected recovery, keep it true
+        if (window.location.pathname === '/set-password' && session && recoveryDetectedOnceRef.current) {
           shouldBeInRecovery = true;
         }
         
-        // If we detect recovery but we're not on reset-password page, navigate there
+        // If we detect recovery but we're not on set-password page, navigate there
         // This handles the case where Supabase redirects to root with hash
-        if (shouldBeInRecovery && window.location.pathname !== '/reset-password' && window.location.pathname !== '/login') {
+        // IMPORTANT: also exclude /signup — invite links carry similar URL params
+        if (shouldBeInRecovery && window.location.pathname !== '/set-password' && window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
           // Use setTimeout to avoid navigation during render
           setTimeout(() => {
-            window.location.href = '/reset-password';
+            window.location.href = '/set-password';
           }, 0);
         }
         

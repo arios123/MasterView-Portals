@@ -66,7 +66,7 @@ export const ProtectedTabRoute: React.FC<ProtectedTabRouteProps> = ({
   // Allow password recovery to pass through untouched
   if (
     isPasswordRecovery &&
-    location.pathname === '/reset-password'
+    location.pathname === '/set-password'
   ) {
     return <>{children}</>;
   }
@@ -83,9 +83,9 @@ export const ProtectedTabRoute: React.FC<ProtectedTabRouteProps> = ({
     return <Navigate to="/" replace />;
   }
 
-  // If in password recovery, redirect to reset-password page
+  // If in password recovery, redirect to set-password page
   if (isPasswordRecovery) {
-    return <Navigate to="/reset-password" replace />;
+    return <Navigate to="/set-password" replace />;
   }
 
   if (!can(requiredPermission)) {

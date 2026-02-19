@@ -30,7 +30,7 @@ export default function Auth() {
         return true;
       }
       
-      if (window.location.pathname === '/reset-password') {
+      if (window.location.pathname === '/set-password') {
         // Check hash fragments
         if (window.location.hash) {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -63,8 +63,8 @@ export default function Auth() {
         // Redirect to projects dashboard if authenticated
         // BUT: Do NOT redirect if we're in a password recovery flow
         if (event === 'SIGNED_IN' && isRecovery) {
-          // 🚫 Do NOT redirect to dashboard - navigate to reset-password instead
-          navigate('/reset-password');
+          // 🚫 Do NOT redirect to dashboard - navigate to set-password instead
+          navigate('/set-password');
           return;
         }
         

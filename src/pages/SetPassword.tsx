@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 
-export default function ResetPassword() {
+export default function SetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,7 +43,7 @@ export default function ResetPassword() {
       return type === "recovery" || !!code || !!tokenHash || (!!accessToken && !!refreshToken);
     };
 
-    // Verify session on /reset-password (Step 3 from user's guidance)
+    // Verify session on /set-password
     const verifySession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -55,9 +55,9 @@ export default function ResetPassword() {
       
       // If we have a session but no recovery indicators, wait for PASSWORD_RECOVERY event
       // This handles the case where Supabase has already processed the hash
-      if (session && window.location.pathname === "/reset-password") {
+      if (session && window.location.pathname === "/set-password") {
         // Give it a moment for the PASSWORD_RECOVERY event to fire
-        // If we're on reset-password with a session, we're likely in recovery
+        // If we're on set-password with a session, we're likely in recovery
         setIsRecoveryFlow(true); // Optimistically set to true, will be corrected if event doesn't fire
         setTimeout(() => {
           // Check again after event should have fired
@@ -91,14 +91,14 @@ export default function ResetPassword() {
           setIsRecoveryFlow(true);
         } else if (event === "SIGNED_IN" && session) {
           // Check if this sign-in is part of a recovery flow
-          // If we're on reset-password page and getting SIGNED_IN, likely recovery
-          if (window.location.pathname === "/reset-password") {
+          // If we're on set-password page and getting SIGNED_IN, likely recovery
+          if (window.location.pathname === "/set-password") {
             setIsRecoveryFlow(true);
           } else if (checkRecoveryParams()) {
             setIsRecoveryFlow(true);
           }
-        } else if (event === "INITIAL_SESSION" && session && window.location.pathname === "/reset-password") {
-          // INITIAL_SESSION with session on reset-password page - likely recovery
+        } else if (event === "INITIAL_SESSION" && session && window.location.pathname === "/set-password") {
+          // INITIAL_SESSION with session on set-password page - likely recovery
           setIsRecoveryFlow(true);
         } else if (session && checkRecoveryParams()) {
           // We have a session and recovery indicators
@@ -115,7 +115,7 @@ export default function ResetPassword() {
     };
   }, []);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!password || !confirmPassword) {
@@ -168,7 +168,7 @@ export default function ResetPassword() {
         description: "Your password has been reset successfully!",
       });
 
-      // Step 5: Sign the user out after reset (best practice)
+      // Sign the user out after reset (best practice)
       await supabase.auth.signOut();
       
       // Redirect to login with success query param
@@ -232,13 +232,13 @@ export default function ResetPassword() {
       
       <Card className="w-full max-w-md rounded-2xl border border-[#cfcfcf] bg-white shadow-smooth-lg relative z-10">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-2xl font-bold text-[#0B294b]">Reset your password</CardTitle>
+          <CardTitle className="text-2xl font-bold text-[#0B294b]">Set your password</CardTitle>
           <CardDescription className="text-[#617b5d] mt-2 text-sm">
             Enter and confirm your new password below.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleResetPassword} className="space-y-4">
+          <form onSubmit={handleSetPassword} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password" className="text-[#0B294b]">New password</Label>
               <Input
@@ -272,13 +272,13 @@ export default function ResetPassword() {
               className="w-full rounded-xl bg-[#2b8ac4] text-white hover:bg-[#46b7d7] transition-all duration-200 shadow-sm hover:shadow-md"
               disabled={loading}
             >
-              {loading ? "Resetting Password..." : "Reset Password"}
+              {loading ? "Setting Password..." : "Set Password"}
             </Button>
             <Button
               type="button"
               onClick={() => navigate("/login")}
               variant="ghost"
-              className="w-full rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"
+              className="w-full rounded-xl text-[#617b5d] hover:text-[#0B294b] hover:bg-[#e7ebed]"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Sign In
