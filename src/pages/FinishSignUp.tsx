@@ -73,6 +73,15 @@ export default function FinishSignUp() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
+          // getSession() returns a cached JWT – verify the user still exists server-side
+          const { error: userCheckError } = await supabase.auth.getUser();
+          if (userCheckError) {
+            console.warn("Cached session references a non-existent user, clearing:", userCheckError.message);
+            await supabase.auth.signOut();
+            setPageState('invalid');
+            return;
+          }
+
           // Already signed in with incomplete profile → show form
           if (!session.user.user_metadata?.name) {
             setEstablishedSession(session);
@@ -116,6 +125,15 @@ export default function FinishSignUp() {
         }
 
         if (session?.user) {
+          // Verify the user actually exists server-side before trusting the JWT
+          const { error: userCheckError } = await supabase.auth.getUser();
+          if (userCheckError) {
+            console.warn("Session user does not exist on server, clearing:", userCheckError.message);
+            await supabase.auth.signOut();
+            setPageState('invalid');
+            return;
+          }
+
           window.history.replaceState(null, '', window.location.pathname);
           setEstablishedSession(session);
           setPageState('form');
@@ -129,10 +147,14 @@ export default function FinishSignUp() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-            window.history.replaceState(null, '', window.location.pathname);
-            setEstablishedSession(session);
-            setPageState('form');
-            return;
+            const { error: userCheckError } = await supabase.auth.getUser();
+            if (!userCheckError) {
+              window.history.replaceState(null, '', window.location.pathname);
+              setEstablishedSession(session);
+              setPageState('form');
+              return;
+            }
+            await supabase.auth.signOut();
           }
         } catch { /* ignore */ }
         setPageState('invalid');
@@ -238,14 +260,22 @@ export default function FinishSignUp() {
     setLoading(true);
 
     try {
-      // Ensure we have a valid session
+      // Ensure we have a valid session whose user still exists server-side
       let { data: { session } } = await supabase.auth.getSession();
 
+      if (session) {
+        const { error: userCheckError } = await supabase.auth.getUser();
+        if (userCheckError) {
+          console.warn("Session is stale, attempting recovery:", userCheckError.message);
+          await supabase.auth.signOut();
+          session = null;
+        }
+      }
+
       if (!session) {
-        // Try re-consuming tokens as a fallback
         const params = extractTokenParams();
         const recovered = await tryConsumeTokens(params);
-        if (!recovered) throw new Error("Authentication session missing. Please use the invite link again.");
+        if (!recovered) throw new Error("Your session has expired. Please use the invite link again to finish signing up.");
         session = recovered;
       }
 
