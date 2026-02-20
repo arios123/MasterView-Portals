@@ -33,11 +33,22 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [phase, setPhase] = useState<Phase>(() =>
-    hasRecoveryParams() ? 'validating' : 'request'
-  );
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (hasRecoveryParams()) return 'validating';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('link_error') === 'expired') return 'invalid';
+    return 'request';
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Clean up the link_error param from the URL so it doesn't persist on refresh
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('link_error')) {
+      window.history.replaceState(null, '', '/reset-password');
+    }
+  }, []);
 
   useEffect(() => {
     if (phase !== 'validating') return;

@@ -8,6 +8,19 @@ export default function LandingWrapper() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check for auth error in URL hash (e.g., expired OTP from password reset or invite link).
+    // When a Supabase email link fails verification, Supabase redirects to the Site URL (root)
+    // with error details in the hash — not to the original redirect_to. We intercept that here
+    // and send the user to /reset-password which already has a nice "link expired" UI.
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const errorCode = hashParams.get("error_code");
+      if (errorCode === "otp_expired" || hashParams.get("error") === "access_denied") {
+        window.location.href = "/reset-password?link_error=expired";
+        return;
+      }
+    }
+
     // Check if recovery is detected in URL (before context state might be set)
     const checkRecoveryInUrl = () => {
       // Only detect explicit type=recovery — code/token_hash alone could be invites
