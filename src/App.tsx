@@ -18,16 +18,14 @@ import UpdatesPage from "./pages/landing/UpdatesPage";
 import AboutPage from "./pages/landing/AboutPage";
 import TeamPage from "./pages/landing/TeamPage";
 import SupportPage from "./pages/landing/SupportPage";
-// import SecurityPage from "./pages/landing/SecurityPage";
 import TermsPage from "./pages/landing/TermsPage";
 import PrivacyPage from "./pages/landing/PrivacyPage";
 import DocumentationPage from "./pages/landing/DocumentationPage";
 import VideoTutorialsPage from "./pages/landing/VideoTutorialsPage";
-import Auth from "./pages/Auth";
+import SignIn from "./pages/SignIn";
 import Register from "./pages/Register";
-import SignUp from "./pages/SignUp";
-import ForgotPassword from "./pages/ForgotPassword";
-import SetPassword from "./pages/SetPassword";
+import ResetPassword from "./pages/ResetPassword";
+import FinishSignUp from "./pages/FinishSignUp";
 import NotFound from "./pages/NotFound";
 import ChoosePlan from "./pages/ChoosePlan";
 import SelectWorkspace from "./pages/SelectWorkspace";
@@ -36,16 +34,14 @@ import CheckoutCancel from "./pages/CheckoutCancel";
 import { SubscriptionGuard } from "./components/SubscriptionGuard";
 import { AppShell } from "./components/AppShell";
 
-// Configure QueryClient to prevent auto-refetch on window focus/reconnect
-// This prevents the page from reloading data when switching browser tabs or staying idle
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false, // Don't refetch when window regains focus
-      refetchOnReconnect: false, // Don't refetch when network reconnects
-      refetchOnMount: false, // Don't refetch when component remounts (only refetch manually)
-      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-      gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
     },
   },
 });
@@ -60,153 +56,132 @@ const App = () => (
           <WorkspaceProvider>
             <OnboardingProvider>
               <Routes>
-            <Route path="/" element={<LandingWrapper />} />
-            <Route path="/product/galaxy-of-features" element={<ProductFeaturesPage />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/updates" element={<UpdatesPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/team" element={<TeamPage />} />
-            <Route path="/support" element={<SupportPage />} />
-            {/* <Route path="/security" element={<SecurityPage />} /> */}
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/documentation" element={<DocumentationPage />} />
-            <Route path="/video-tutorials" element={<VideoTutorialsPage />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/set-password" element={<SetPassword />} />
-            <Route path="/choose-plan" element={
-              <ProtectedRoute>
-                <ChoosePlan />
-              </ProtectedRoute>
-            } />
-            <Route path="/select-workspace" element={
-              <ProtectedRoute>
-                <SelectWorkspace />
-              </ProtectedRoute>
-            } />
-            <Route path="/checkout/success" element={
-              <ProtectedRoute>
-                <CheckoutSuccess />
-              </ProtectedRoute>
-            } />
-            <Route path="/checkout/cancel" element={
-              <ProtectedRoute>
-                <CheckoutCancel />
-              </ProtectedRoute>
-            } />
-            <Route 
-              path="/dashboard" 
-              element={
-                <AppShell>
+                {/* Public / Landing */}
+                <Route path="/" element={<LandingWrapper />} />
+                <Route path="/product/galaxy-of-features" element={<ProductFeaturesPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/updates" element={<UpdatesPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/team" element={<TeamPage />} />
+                <Route path="/support" element={<SupportPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/documentation" element={<DocumentationPage />} />
+                <Route path="/video-tutorials" element={<VideoTutorialsPage />} />
+
+                {/* Auth */}
+                <Route path="/login" element={<SignIn />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/finish-signup" element={<FinishSignUp />} />
+
+                {/* Onboarding / Checkout (protected) */}
+                <Route path="/choose-plan" element={
                   <ProtectedRoute>
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
+                    <ChoosePlan />
                   </ProtectedRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/projects" 
-              element={
-                <AppShell>
-                  <ProtectedTabRoute requiredPermission="tab.projects.view">
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedTabRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/projects/:clientId/:projectId/:tab?" 
-              element={
-                <AppShell>
-                  <ProtectedProjectTabRoute>
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedProjectTabRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/clients" 
-              element={
-                <AppShell>
-                  <ProtectedTabRoute requiredPermission="tab.clients.view">
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedTabRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/calendar" 
-              element={
-                <AppShell>
-                  <ProtectedTabRoute requiredPermission="tab.calendar.view">
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedTabRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/completed" 
-              element={
-                <AppShell>
-                  <ProtectedTabRoute requiredPermission="tab.completed.view">
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedTabRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/lost" 
-              element={
-                <AppShell>
-                  <ProtectedTabRoute requiredPermission="tab.lost.view">
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedTabRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/internalsupport" 
-              element={
-                <AppShell>
+                } />
+                <Route path="/select-workspace" element={
                   <ProtectedRoute>
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
+                    <SelectWorkspace />
                   </ProtectedRoute>
-                </AppShell>
-              } 
-            />
-            <Route 
-              path="/admin/:section?" 
-              element={
-                <AppShell>
-                  <ProtectedAdminTabRoute>
-                    <SubscriptionGuard>
-                      <Index />
-                    </SubscriptionGuard>
-                  </ProtectedAdminTabRoute>
-                </AppShell>
-              } 
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+                } />
+                <Route path="/checkout/success" element={
+                  <ProtectedRoute>
+                    <CheckoutSuccess />
+                  </ProtectedRoute>
+                } />
+                <Route path="/checkout/cancel" element={
+                  <ProtectedRoute>
+                    <CheckoutCancel />
+                  </ProtectedRoute>
+                } />
+
+                {/* App (protected + subscription guarded) */}
+                <Route path="/dashboard" element={
+                  <AppShell>
+                    <ProtectedRoute>
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedRoute>
+                  </AppShell>
+                } />
+                <Route path="/projects" element={
+                  <AppShell>
+                    <ProtectedTabRoute requiredPermission="tab.projects.view">
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedTabRoute>
+                  </AppShell>
+                } />
+                <Route path="/projects/:clientId/:projectId/:tab?" element={
+                  <AppShell>
+                    <ProtectedProjectTabRoute>
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedProjectTabRoute>
+                  </AppShell>
+                } />
+                <Route path="/clients" element={
+                  <AppShell>
+                    <ProtectedTabRoute requiredPermission="tab.clients.view">
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedTabRoute>
+                  </AppShell>
+                } />
+                <Route path="/calendar" element={
+                  <AppShell>
+                    <ProtectedTabRoute requiredPermission="tab.calendar.view">
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedTabRoute>
+                  </AppShell>
+                } />
+                <Route path="/completed" element={
+                  <AppShell>
+                    <ProtectedTabRoute requiredPermission="tab.completed.view">
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedTabRoute>
+                  </AppShell>
+                } />
+                <Route path="/lost" element={
+                  <AppShell>
+                    <ProtectedTabRoute requiredPermission="tab.lost.view">
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedTabRoute>
+                  </AppShell>
+                } />
+                <Route path="/internalsupport" element={
+                  <AppShell>
+                    <ProtectedRoute>
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedRoute>
+                  </AppShell>
+                } />
+                <Route path="/admin/:section?" element={
+                  <AppShell>
+                    <ProtectedAdminTabRoute>
+                      <SubscriptionGuard>
+                        <Index />
+                      </SubscriptionGuard>
+                    </ProtectedAdminTabRoute>
+                  </AppShell>
+                } />
+
+                {/* Catch-all */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </OnboardingProvider>
           </WorkspaceProvider>

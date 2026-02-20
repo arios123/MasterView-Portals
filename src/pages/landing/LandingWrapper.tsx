@@ -25,7 +25,7 @@ export default function LandingWrapper() {
     // This should happen even before user is fully loaded (hash detection is immediate)
     if (hasRecoveryInUrl || isPasswordRecovery) {
       // Use window.location.href to preserve hash fragments (React Router navigate() loses them)
-      window.location.href = '/set-password' + window.location.hash + window.location.search;
+      window.location.href = '/reset-password' + window.location.hash + window.location.search;
       return;
     }
 

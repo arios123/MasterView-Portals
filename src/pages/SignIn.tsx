@@ -6,82 +6,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from '@supabase/supabase-js';
 import { CheckCircle2 } from "lucide-react";
 
-export default function Auth() {
+export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  
-  // Check if redirected from password reset
+
   const resetSuccess = searchParams.get('reset') === 'success';
 
   useEffect(() => {
-    // Check if we're in a password recovery flow (check hash first, as per Supabase v2 recommendation)
-    const checkIsPasswordRecovery = (): boolean => {
-      // Check URL hash for recovery (Supabase v2 recommended approach)
-      if (window.location.hash.includes('type=recovery')) {
-        return true;
-      }
-      
-      if (window.location.pathname === '/set-password') {
-        // Check hash fragments
-        if (window.location.hash) {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          if (hashParams.get('type') === 'recovery') {
-            return true;
-          }
-        }
-        
-        // Check search params
-        const urlParams = new URLSearchParams(window.location.search);
-        const type = urlParams.get('type');
-        const code = urlParams.get('code');
-        const tokenHash = urlParams.get('token_hash');
-        const accessToken = urlParams.get('access_token');
-        const refreshToken = urlParams.get('refresh_token');
-        return type === 'recovery' || !!code || !!tokenHash || (!!accessToken && !!refreshToken);
-      }
-      return false;
-    };
-
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Check if this is a recovery flow
-        const isRecovery = event === 'PASSWORD_RECOVERY' || checkIsPasswordRecovery();
-        
-        // Redirect to projects dashboard if authenticated
-        // BUT: Do NOT redirect if we're in a password recovery flow
-        if (event === 'SIGNED_IN' && isRecovery) {
-          // 🚫 Do NOT redirect to dashboard - navigate to set-password instead
-          navigate('/set-password');
+        if (event === 'PASSWORD_RECOVERY') {
+          navigate('/reset-password');
           return;
         }
-        
-        if (session?.user && !isRecovery) {
+
+        if (session?.user && event === 'SIGNED_IN') {
           navigate('/projects');
         }
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      // Redirect to projects dashboard if already authenticated
-      // BUT: Don't redirect if we're in a password recovery flow
-      if (session?.user && !checkIsPasswordRecovery()) {
+      if (session?.user) {
         navigate('/projects');
       }
     });
@@ -91,7 +43,7 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Missing Information",
@@ -109,9 +61,7 @@ export default function Auth() {
         password,
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -119,7 +69,7 @@ export default function Auth() {
       });
     } catch (error: any) {
       let errorMessage = "An error occurred during sign in";
-      
+
       if (error.message.includes('Invalid login credentials')) {
         errorMessage = "Invalid email or password";
       } else if (error.message.includes('Email not confirmed')) {
@@ -141,7 +91,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center px-4 py-10">
       <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-      
+
       <Card className="w-full max-w-md rounded-2xl border border-[#cfcfcf] bg-white shadow-smooth-lg relative z-10">
         <CardHeader className="text-center pb-6">
           <CardTitle className="text-2xl font-bold text-[#0B294b]">
@@ -153,9 +103,9 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           {resetSuccess && (
-            <div className="mb-4 p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/50 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-              <p className="text-sm text-emerald-300">
+            <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+              <p className="text-sm text-emerald-700">
                 Password reset successful! Please sign in with your new password.
               </p>
             </div>
@@ -195,7 +145,7 @@ export default function Auth() {
               {loading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
-          
+
           <div className="text-center text-sm text-[#617b5d] pt-4 border-t border-[#cfcfcf] mt-4 space-y-2">
             <div>
               Don't have an account?{" "}
@@ -209,7 +159,7 @@ export default function Auth() {
             <div>
               Forgot your password?{" "}
               <button
-                onClick={() => navigate("/forgot-password")}
+                onClick={() => navigate("/reset-password")}
                 className="text-[#2b8ac4] font-medium hover:text-[#46b7d7] hover:underline transition-colors"
               >
                 Reset it
