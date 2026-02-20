@@ -84,6 +84,25 @@ export default function FinishSignUp() {
 
           // Already signed in with incomplete profile → show form
           if (!session.user.user_metadata?.name) {
+            // The name might exist in the users table but not in user_metadata
+            // (e.g. metadata was cleared, or user was created without it).
+            // Check the DB before forcing the user through the setup form again.
+            const { data: profileData } = await supabase
+              .from('users')
+              .select('name')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+
+            if (profileData?.name) {
+              // Sync name back to user_metadata so the route guards stop redirecting here
+              await supabase.auth.updateUser({
+                data: { ...session.user.user_metadata, name: profileData.name, display_name: profileData.name },
+              });
+              await supabase.auth.refreshSession();
+              navigate("/projects", { replace: true });
+              return;
+            }
+
             setEstablishedSession(session);
             setPageState('form');
             return;
