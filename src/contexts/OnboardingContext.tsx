@@ -197,9 +197,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
         return;
       }
 
-      // Don't auto-start onboarding when user is on checkout success page.
-      // Wait until they click "Go to Dashboard"; onboarding will start after navigation.
-      if (location.pathname === '/checkout/success') {
+      // Don't auto-start onboarding when user is on checkout success or choose-plan.
+      // Success: wait until they click "Go to Dashboard". Choose-plan: wait until after payment.
+      if (location.pathname === '/checkout/success' || location.pathname === '/choose-plan') {
         return;
       }
 
