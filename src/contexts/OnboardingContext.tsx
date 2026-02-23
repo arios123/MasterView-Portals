@@ -197,6 +197,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
         return;
       }
 
+      // Don't auto-start onboarding when user is on checkout success page.
+      // Wait until they click "Go to Dashboard"; onboarding will start after navigation.
+      if (location.pathname === '/checkout/success') {
+        return;
+      }
+
       // Only workspace owners get onboarding
       const isOwner = currentWorkspace.owner_id === user.id;
       
@@ -269,7 +275,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     };
 
     checkAndInitializeOnboarding();
-  }, [currentWorkspace, user, workspaceLoading, loadFromStorage, saveToStorage, startOnboarding, state.active, state.workspaceId]);
+  }, [currentWorkspace, user, workspaceLoading, location.pathname, loadFromStorage, saveToStorage, startOnboarding, state.active, state.workspaceId]);
 
   // Handle navigation based on current step
   useEffect(() => {
