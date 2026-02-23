@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderKanban, Users, CalendarDays, CheckCircle2, XCircle, Settings, Menu, ChevronDown, LogOut, LifeBuoy } from "lucide-react";
+import { FolderKanban, Users, CalendarDays, CheckCircle2, XCircle, Settings, Menu, ChevronDown, LogOut, LifeBuoy, FileText, Video, ExternalLink } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -192,7 +192,33 @@ export function MobileSidebar({ activeTab, onTabChange, availableTabs, onSignOut
                     </Button>
                   );
                 })}
-                
+
+                {/* Documentation & Video Tutorials - open in new tab (mobile: align with nav tabs) */}
+                <a
+                  href="/documentation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center w-full h-10 px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="flex items-center w-8 shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <span className="flex-1 min-w-0 text-left">Documentation</span>
+                  <ExternalLink className="h-3 w-3 opacity-60 shrink-0 ml-2" />
+                </a>
+                <a
+                  href="/video-tutorials"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center w-full h-10 px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="flex items-center w-8 shrink-0">
+                    <Video className="h-4 w-4" />
+                  </span>
+                  <span className="flex-1 min-w-0 text-left">Video Tutorials</span>
+                  <ExternalLink className="h-3 w-3 opacity-60 shrink-0 ml-2" />
+                </a>
+
                 {/* Logout Button - Always visible */}
                 <Button
                   variant="ghost"

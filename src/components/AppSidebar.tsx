@@ -1,4 +1,4 @@
-import { FolderKanban, Users, CalendarDays, CheckCircle2, XCircle, Settings, Menu, ChevronDown, LifeBuoy } from "lucide-react";
+import { FolderKanban, Users, CalendarDays, CheckCircle2, XCircle, Settings, Menu, ChevronDown, LifeBuoy, FileText, Video, ExternalLink } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -131,6 +131,31 @@ export function AppSidebar({ activeTab, onTabChange, availableTabs }: AppSidebar
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={isCollapsed ? "Documentation" : undefined}>
+                  <a href="/documentation" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+                    <FileText className="h-4 w-4" />
+                    <span>Documentation</span>
+                    <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={isCollapsed ? "Video Tutorials" : undefined}>
+                  <a href="/video-tutorials" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+                    <Video className="h-4 w-4" />
+                    <span>Video Tutorials</span>
+                    <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

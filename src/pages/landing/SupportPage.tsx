@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Mail, HelpCircle, MessageSquare, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeaderLinks } from "./HeaderLinks";
@@ -7,24 +5,14 @@ import { Footer } from "./Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const BAR_HOVER_SCALE_X = 1.7;
 
 export default function SupportPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [activePanel, setActivePanel] = useState<number | null>(null);
   const isMobile = useIsMobile();
-
-  // Redirect authenticated users to portal support
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/internalsupport", { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   const isInView = useInView(containerRef, { once: true, margin: "-100px" });
 
@@ -46,20 +34,6 @@ export default function SupportPage() {
       accent: "#617b5d",
     }
   ];
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center">
-        <div className="text-[#617b5d]">Loading...</div>
-      </div>
-    );
-  }
-
-  // If user is authenticated, they'll be redirected by the effect above
-  if (user) {
-    return null;
-  }
 
   return (
     <div ref={containerRef} className="min-h-screen bg-[#e7ebed]">

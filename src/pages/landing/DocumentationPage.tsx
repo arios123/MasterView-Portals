@@ -1,11 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeRaw from "rehype-raw";
 import { HeaderLinks } from "./HeaderLinks";
-import { useAuth } from "@/contexts/AuthContext";
 import documentationContent from "./documentation.md?raw";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -33,8 +31,6 @@ interface DocumentationSection {
 }
 
 export default function DocumentationPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string>("");
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set(["introduction", "you-client", "project-info", "materials-labor", "payments", "miscellaneous"])
@@ -47,13 +43,6 @@ export default function DocumentationPage() {
     { id: "payments", label: "Payments", collapsible: true, subsections: [] },
     { id: "miscellaneous", label: "Miscellaneous", collapsible: true, subsections: [] },
   ]);
-
-  // Redirect authenticated users to portal
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/projects", { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   // Parse markdown content into structured sections
   const parsedSections = useMemo(() => {
@@ -232,15 +221,6 @@ export default function DocumentationPage() {
     window.location.hash = sectionId;
     scrollToSection(sectionId);
   };
-
-  // Show loading while checking auth, or nothing if redirecting
-  if (loading || user) {
-    return (
-      <div className="min-h-screen bg-[#e7ebed] flex items-center justify-center">
-        <div className="text-[#617b5d]">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#e7ebed]">

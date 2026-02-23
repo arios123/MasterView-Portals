@@ -1,11 +1,13 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { isLandingRouteNoRedirect } from "@/constants/landingRoutes";
 import Landing from "../Landing";
 
 export default function LandingWrapper() {
   const { user, loading, isPasswordRecovery } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check for auth error in URL hash (e.g., expired OTP from password reset or invite link).
@@ -42,11 +44,13 @@ export default function LandingWrapper() {
       return;
     }
 
-    // If user is authenticated, redirect to projects dashboard (only if NOT in recovery)
+    // If user is authenticated, redirect to projects dashboard only when NOT on an allowlisted landing route
     if (!loading && user && !isPasswordRecovery && !hasRecoveryInUrl) {
-      navigate("/projects", { replace: true });
+      if (!isLandingRouteNoRedirect(location.pathname)) {
+        navigate("/projects", { replace: true });
+      }
     }
-  }, [user, loading, navigate, isPasswordRecovery]);
+  }, [user, loading, navigate, isPasswordRecovery, location.pathname]);
 
   // Show loading state while checking auth
   if (loading) {
@@ -57,8 +61,8 @@ export default function LandingWrapper() {
     );
   }
 
-  // Show landing page only if not authenticated
-  if (!user) {
+  // Show landing page when not authenticated, or when authenticated but on allowlisted route (e.g. "/")
+  if (!user || isLandingRouteNoRedirect(location.pathname)) {
     return <Landing />;
   }
 
