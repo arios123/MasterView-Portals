@@ -4,7 +4,7 @@ import { HeaderLinks } from "./HeaderLinks";
 import { Footer } from "./Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 export default function PricingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,13 +17,7 @@ export default function PricingPage() {
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
-  const monthlyPrice = 200;
-  const yearlyPrice = 2000;
-  const monthlyYearlyTotal = monthlyPrice * 12; // $2400
-  const yearlySavings = monthlyYearlyTotal - yearlyPrice; // $400
-  const savingsPercentage = Math.round((yearlySavings / monthlyYearlyTotal) * 100); // ~17%
-
-  const [isYearly, setIsYearly] = useState(false);
+  const monthlyPrice = 197;
 
   const features = [
     "Unlimited projects and clients",
@@ -88,53 +82,19 @@ export default function PricingPage() {
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="max-w-5xl mx-auto">
-              {/* Billing Toggle */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="flex items-center justify-center gap-4 mb-12"
-              >
-                <span className={`text-sm font-medium ${!isYearly ? 'text-[#0B294b]' : 'text-[#8b8b8b]'}`}>
-                  Monthly
-                </span>
-                <button
-                  onClick={() => setIsYearly(!isYearly)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    isYearly ? 'bg-[#2b8ac4]' : 'bg-[#cfcfcf]'
-                  }`}
-                >
-                  <motion.div
-                    className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md"
-                    animate={{ x: isYearly ? 28 : 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                </button>
-                <span className={`text-sm font-medium ${isYearly ? 'text-[#0B294b]' : 'text-[#8b8b8b]'}`}>
-                  Yearly
-                  <span className="ml-2 text-xs text-[#2b8ac4]">(Save {savingsPercentage}%)</span>
-                </span>
-              </motion.div>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Monthly Plan */}
+              <div className="max-w-md mx-auto">
+                {/* Monthly Plan (only plan) */}
                 <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.6 }}
-                  animate={{ scale: !isYearly ? 1.02 : 1 }}
                 >
-                  <Card className={`border-2 transition-all duration-300 h-full ${
-                    !isYearly 
-                      ? 'border-[#2b8ac4] shadow-lg bg-white' 
-                      : 'border-[#cfcfcf] bg-white hover:border-[#a6dbeb]'
-                  }`}>
+                  <Card className="border-2 border-[#2b8ac4] shadow-lg bg-white h-full">
                     <CardHeader>
                       <CardTitle className="text-2xl font-serif text-[#0B294b]">Monthly</CardTitle>
                       <CardDescription className="text-base mt-2 text-[#617b5d]">
-                        Perfect for trying us out
+                        Full access to all features
                       </CardDescription>
                       <div className="mt-4">
                         <span className="text-5xl font-bold text-[#0B294b]">${monthlyPrice}</span>
@@ -144,82 +104,7 @@ export default function PricingPage() {
                     <CardContent>
                       <Button 
                         size="lg" 
-                        className={`w-full mb-6 transition-all ${
-                          !isYearly
-                            ? 'bg-[#2b8ac4] hover:bg-[#46b7d7] text-white'
-                            : 'bg-[#e7ebed] hover:bg-[#cfcfcf] text-[#0B294b]'
-                        }`}
-                        asChild
-                      >
-                        <a href="/register">
-                          Try for free
-                          <ArrowRight className="h-5 w-5 ml-2" />
-                        </a>
-                      </Button>
-                      <ul className="space-y-3">
-                        {features.map((feature, index) => (
-                          <motion.li
-                            key={index}
-                            initial={{ opacity: 0, x: -10 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.3, delay: index * 0.03 }}
-                            className="flex items-start gap-3"
-                          >
-                            <Check className="h-5 w-5 text-[#2b8ac4] flex-shrink-0 mt-0.5" />
-                            <span className="text-[#617b5d]">{feature}</span>
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                {/* Yearly Plan */}
-                <motion.div
-                  initial={{ opacity: 0, x: 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6 }}
-                  animate={{ scale: isYearly ? 1.02 : 1 }}
-                >
-                  <Card className={`border-2 relative transition-all duration-300 h-full ${
-                    isYearly 
-                      ? 'border-[#2b8ac4] shadow-lg bg-white' 
-                      : 'border-[#96ab94] bg-white hover:border-[#a6dbeb]'
-                  }`}>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                      className="absolute -top-4 left-1/2 -translate-x-1/2"
-                    >
-                      <span className="bg-[#96ab94] text-white px-4 py-1 rounded-full text-sm font-semibold shadow-md">
-                        Save {savingsPercentage}%
-                      </span>
-                    </motion.div>
-                    <CardHeader>
-                      <CardTitle className="text-2xl font-serif text-[#0B294b]">Yearly</CardTitle>
-                      <CardDescription className="text-base mt-2 text-[#617b5d]">
-                        Best value for growing teams
-                      </CardDescription>
-                      <div className="mt-4">
-                        <span className="text-5xl font-bold text-[#0B294b]">${yearlyPrice}</span>
-                        <span className="text-[#8b8b8b] ml-2">/year</span>
-                      </div>
-                      <p className="text-sm text-[#8b8b8b] mt-2">
-                        Just ${Math.round(yearlyPrice / 12)}/month
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <Button 
-                        size="lg" 
-                        className={`w-full mb-6 transition-all ${
-                          isYearly
-                            ? 'bg-[#2b8ac4] hover:bg-[#46b7d7] text-white'
-                            : 'bg-[#e7ebed] hover:bg-[#cfcfcf] text-[#0B294b]'
-                        }`}
+                        className="w-full mb-6 bg-[#2b8ac4] hover:bg-[#46b7d7] text-white"
                         asChild
                       >
                         <a href="/register">
