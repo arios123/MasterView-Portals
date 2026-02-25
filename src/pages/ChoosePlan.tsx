@@ -209,7 +209,7 @@ export default function ChoosePlan() {
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold">Free Trial</div>
-                  <div className="text-sm text-muted-foreground">Then $197/month</div>
+                  <div className="text-sm text-muted-foreground">Then $97/month</div>
                 </div>
               </div>
             </CardHeader>

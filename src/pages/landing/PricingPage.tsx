@@ -17,7 +17,7 @@ export default function PricingPage() {
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
-  const monthlyPrice = 197;
+  const monthlyPrice = 97;
 
   const features = [
     "Unlimited projects and clients",
