@@ -40,8 +40,6 @@ The app is **multi-tenant** (workspaces), **subscription-based** (Stripe), and u
 | **Documents** | **docxtemplater**, **Pizzip**, **pdf-lib**, **React Markdown** |
 | **Tooling** | **ESLint**, **TypeScript** strict mode, **CVA** (class-variance-authority) |
 
-**Keywords:** `React` · `TypeScript` · `Supabase` · `Stripe` · `PostgreSQL` · `RLS` · `REST` · `SPA` · `SaaS` · `multi-tenant` · `RBAC` · `Edge Functions` · `Vite` · `Tailwind` · `REST API`
-
 ---
 
 ## ✨ Features
